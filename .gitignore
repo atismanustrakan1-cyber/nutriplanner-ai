@@ -1,0 +1,9 @@
+# macOS
+.DS_Store
+
+# Build output
+c_core/build/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/

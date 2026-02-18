@@ -1,0 +1,149 @@
+
+
+NutriPlanner AI (C-first) — Requirements + Core Logic (MVP)
+(MVP = Minimal Viable Product)
+(Will focus on future products when finished with core logic)
+
+1) Project Purpose
+Build a C “core engine” that can:
+- compute daily calorie targets for different goals
+- compute macro targets (protein/carbs/fat)
+- log meals for a day and compute totals
+- compare totals vs targets and report remaining amounts
+
+This C core will be used by future layers (Python/Java/UI) later.
+
+2) Scope (MVP)
+2.1 Must-Have Features
+A) User Inputs
+- Weight (kg)
+- Goal: loss / maintain / gain
+- Optional (MVP+): daily calorie override
+
+B) Calculations
+- Daily calorie target (integer calories)
+- Macro targets (grams of protein, carbs, fat)
+
+C) Day Logging
+- Add a meal with calories, protein_g, carbs_g, fat_g
+- Maintain a list of meals for the day
+- Compute daily totals by summing meals
+
+D) Progress Output
+- Print target calories/macros
+- Print totals consumed
+- Print remaining calories/macros (target - total)
+- If over target, show overage (negative remaining)
+
+E) Testing
+- Unit tests for every public API function
+- Tests must run via CMake + ctest
+
+2.2 Nice-to-Have (Not required for MVP)
+- Meal schedule generation
+- Grocery list generation
+- Budget optimization
+- Store pricing/stock integration
+- Camera / computer vision
+- Accounts/login, cloud sync
+- Dietary restrictions
+- Location 
+- Budget
+- Taste Prefrence
+
+2.3 Non-Goals (For MVP)
+- Medical advice, diagnosis, or treatment recommendations
+- “Perfect” calorie accuracy (we use a simple heuristic first)
+- Real store inventory scraping
+
+3) Functional Requirements (Detailed)
+
+3.1 Daily Calorie Target
+Function: np_daily_calorie_target(weight_kg, goal) -> int
+Rules (MVP heuristic):
+- base = round(30 * weight_kg)
+- if goal = loss: base - 500
+- if goal = gain: base + 300
+- clamp output to [1200, 4500]
+- if weight_kg <= 0: return -1
+
+3.2 Macro Targets
+Function: np_macro_targets(calories, weight_kg) -> np_macros_t
+Rules (MVP):
+- protein_g = round(1.6 * weight_kg)
+- fat_g     = round(0.8 * weight_kg)
+- carbs_g   = max(0, (calories - (protein_g*4 + fat_g*9)) / 4)
+- clamp macro grams to reasonable bounds (prevent crazy numbers)
+- if calories <= 0 or weight_kg <= 0: return all zeros
+
+3.3 Day Log
+Types:
+- np_meal_t: { calories, protein_g, carbs_g, fat_g }
+- np_daylog_t: dynamic array of meals
+
+Functions:
+- np_daylog_init(log): sets meals=NULL, count=0, capacity=0
+- np_daylog_add_meal(log, meal) -> int
+  - grows array when needed (capacity doubles)
+  - returns 1 on success, 0 on allocation failure
+- np_daylog_totals(log) -> np_meal_t
+  - sums every meal
+- np_daylog_free(log)
+  - frees memory and resets fields
+
+4) CLI Program Requirements (Demo)
+
+The CLI demo should:
+- Ask for weight in kg
+- Ask for goal (-1 loss, 0 maintain, 1 gain)
+- Compute targets
+- Then loop:
+  - option 1: add meal (cal, p, c, f)
+  - option 2: show totals + remaining
+  - option 3: quit
+
+5) Core Logic (Step-by-step)
+
+A) Startup
+1. read weight_kg
+2. read goal
+3. target_calories = np_daily_calorie_target(weight_kg, goal)
+4. target_macros = np_macro_targets(target_calories, weight_kg)
+5. init daylog
+
+B) Add Meal Flow
+1. prompt for calories, protein_g, carbs_g, fat_g
+2. validate numbers are not negative (if negative, reject)
+3. call np_daylog_add_meal
+4. confirm added
+
+C) Show Progress Flow
+1. totals = np_daylog_totals
+2. remaining_cal = target_calories - totals.calories
+3. remaining_p   = target_macros.protein_g - totals.protein_g
+4. remaining_c   = target_macros.carbs_g   - totals.carbs_g
+5. remaining_f   = target_macros.fat_g     - totals.fat_g
+6. print target, totals, remaining
+
+D) Shutdown
+1. free daylog
+2. exit
+
+6) Quality Requirements
+- No global mutable state in the core library
+- Validate inputs; return error codes for invalid inputs
+- Memory safety: every malloc/realloc has a failure path
+- Style: consistent naming (np_ prefix), small functions, comments only where needed
+
+7) Acceptance Criteria (MVP “Done” Definition)
+- Running `ctest` passes all tests
+- Running CLI demo lets user compute targets and log multiple meals
+- CLI prints targets, totals, and remaining amounts correctly
+- Code builds on a clean machine using only CMake + a C compiler
+
+8) File Map (Where things live)
+- c_core/include/nutriplanner/nutriplanner.h  (public API)
+- c_core/src/nutriplanner.c                   (implementation)
+- c_core/tests/test_nutriplanner.c            (unit tests)
+- c_core/examples/cli_demo.c                  (demo program)
+- .github/workflows/cmake.yml                 (CI build + test)

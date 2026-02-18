@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>NutriPlanner AI</title>
+  <meta name="description" content="C-first nutrition planning engine + future app layers." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="container">
+      <div class="brand">
+        <span class="logo">NP</span>
+        <div>
+          <div class="title">NutriPlanner AI</div>
+          <div class="subtitle">C-first nutrition core • future app layers</div>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <a href="#overview">Overview</a>
+        <a href="#mvp">MVP</a>
+        <a href="#build">Build</a>
+        <a href="#team">Team</a>
+        <a href="#roadmap">Roadmap</a>
+        <a class="btn" href="https://github.com/atismanustrakan1-cyber/nutriplanner-ai" target="_blank" rel="noreferrer">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <h1>Plan, track, and improve nutrition — starting with a rock-solid C engine.</h1>
+          <p class="lead">
+            NutriPlanner AI begins as a fast, testable C core that calculates calorie & macro targets, logs meals,
+            and reports progress. Later, it powers meal scheduling, grocery lists, and camera-based estimates.
+          </p>
+
+          <div class="cta">
+            <a class="btn primary" href="#build">Run the demo</a>
+            <button class="btn ghost" id="copyCmd">Copy build command</button>
+          </div>
+
+          <div class="mini">
+            <div class="chip">C core library</div>
+            <div class="chip">Unit tested</div>
+            <div class="chip">CLI demo</div>
+            <div class="chip">GitHub CI</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Quick Demo Output</h2>
+          <pre class="terminal" id="demoOut">Weight (kg): 70
+Goal (-1 loss, 0 maintain, 1 gain): 0
+
+Daily target:
+Calories: 2100
+Protein:  112 g
+Carbs:    230 g
+Fat:      56 g</pre>
+
+          <div class="card-row">
+            <button class="btn small" id="randomize">Randomize example</button>
+            <a class="btn small ghost" href="#mvp">What’s in MVP?</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="overview" class="section">
+      <div class="container">
+        <h2>Overview</h2>
+        <div class="grid-3">
+          <div class="panel">
+            <h3>What it is</h3>
+            <p>A nutrition management project built in phases. We start with the core logic in C to keep it fast, portable, and easy to test.</p>
+          </div>
+          <div class="panel">
+            <h3>Why C first</h3>
+            <p>The core engine becomes reusable across platforms (Python wrapper, Java client, mobile later) without rewriting the math.</p>
+          </div>
+          <div class="panel">
+            <h3>How we build</h3>
+            <p>CMake + unit tests + GitHub Actions. Every change should compile and pass tests before merging.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="mvp" class="section alt">
+      <div class="container">
+        <h2>MVP Scope</h2>
+        <div class="grid-2">
+          <div class="panel">
+            <h3>Included (Phase 1)</h3>
+            <ul>
+              <li>Daily calorie target (loss / maintain / gain)</li>
+              <li>Macro targets (protein/carbs/fat)</li>
+              <li>Meal logging for a day</li>
+              <li>Totals + remaining amounts vs target</li>
+              <li>Unit tests for public API</li>
+              <li>CLI demo for quick testing</li>
+            </ul>
+          </div>
+          <div class="panel">
+            <h3>Later (Phase 2+)</h3>
+            <ul>
+              <li>Meal schedule generator</li>
+              <li>Budget-friendly grocery lists</li>
+              <li>Nearby store prices + stock</li>
+              <li>Dietary restrictions & substitutions</li>
+              <li>Camera feature (CV calorie estimate)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="build" class="section">
+      <div class="container">
+        <h2>Build & Run</h2>
+
+        <div class="panel">
+          <p>From the repo root (the folder that contains <code>c_core/</code>):</p>
+          <pre class="terminal" id="buildCmd">cmake -S c_core -B c_core/build
+cmake --build c_core/build
+ctest --test-dir c_core/build --output-on-failure
+./c_core/build/cli_demo</pre>
+
+          <div class="card-row">
+            <button class="btn small" id="copyBuild">Copy commands</button>
+            <span class="hint" id="copiedMsg" aria-live="polite"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="team" class="section alt">
+      <div class="container">
+        <h2>Team</h2>
+        <div class="grid-3">
+          <div class="panel">
+            <h3>Team Lead</h3>
+            <p>Atis Manustrakan</p>
+          </div>
+          <div class="panel">
+            <h3>Members</h3>
+            <ul>
+              <li>Atis Manustrakan</li>
+              <li>Derick </li>
+              <li>Isabella</li>
+              <li>Logan</li>
+            </ul>
+          </div>
+          <div class="panel">
+            <h3>Tech Stack</h3>
+            <ul>
+              <li>C (core engine)</li>
+              <li>GitHub (collab + CI)</li>
+              <li>Python / Java (later layers)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="roadmap" class="section">
+      <div class="container">
+        <h2>Roadmap</h2>
+        <div class="timeline">
+          <div class="step">
+            <div class="dot"></div>
+            <div>
+              <h3>Phase 1 — C Core MVP</h3>
+              <p>Targets + macros + meal logging + tests + CLI demo.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="dot"></div>
+            <div>
+              <h3>Phase 2 — Meal Planning + Grocery List</h3>
+              <p>Recipes, schedule generation, grocery list output, budget constraints (mock pricing first).</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="dot"></div>
+            <div>
+              <h3>Phase 3 — Vision + Store Data</h3>
+              <p>Camera prototype + integration with real store pricing/availability (if feasible).</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-row">
+      <span>© <span id="year"></span> NutriPlanner AI</span>
+      <span class="muted">Built for a team project • C-first MVP</span>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

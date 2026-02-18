@@ -1,0 +1,116 @@
+:root {
+  --bg: #0b0f14;
+  --fg: #e9eef6;
+  --muted: #a9b4c2;
+  --panel: #111925;
+  --panel2: #0f1620;
+  --border: #1c2a3a;
+  --accent: #4aa3ff;
+  --accent2: #8b5cff;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: var(--bg); color: var(--fg); }
+
+.container { width: min(1100px, 92vw); margin: 0 auto; }
+
+.topbar {
+  position: sticky; top: 0;
+  background: rgba(11, 15, 20, 0.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+  z-index: 10;
+}
+
+.brand { display: flex; align-items: center; gap: 12px; padding: 12px 0; }
+.logo {
+  display: grid; place-items: center;
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 10px; font-weight: 700;
+}
+.title { font-weight: 800; letter-spacing: 0.2px; }
+.subtitle { color: var(--muted); font-size: 12px; margin-top: 2px; }
+
+.topbar .container { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+
+.nav { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.nav a { color: var(--muted); text-decoration: none; font-size: 14px; }
+.nav a:hover { color: var(--fg); }
+
+.btn {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--fg);
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn:hover { border-color: #2a3d55; }
+.btn.primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-color: transparent;
+}
+.btn.ghost { color: var(--muted); }
+.btn.small { padding: 8px 10px; border-radius: 9px; font-size: 13px; }
+
+.hero { padding: 56px 0 18px; }
+.hero-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 20px; align-items: start; }
+@media (max-width: 900px) { .hero-grid { grid-template-columns: 1fr; } }
+
+h1 { font-size: clamp(28px, 4vw, 44px); line-height: 1.05; margin: 0 0 14px; }
+.lead { color: var(--muted); font-size: 16px; line-height: 1.6; margin: 0 0 18px; }
+
+.cta { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+
+.mini { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { border: 1px solid var(--border); background: rgba(255,255,255,0.02); color: var(--muted); padding: 6px 10px; border-radius: 999px; font-size: 12px; }
+
+.section { padding: 34px 0; }
+.section.alt { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.00)); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.section h2 { margin: 0 0 14px; font-size: 22px; }
+
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+@media (max-width: 900px) { .grid-3, .grid-2 { grid-template-columns: 1fr; } }
+
+.panel, .card {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  padding: 16px;
+  border-radius: 14px;
+}
+.panel h3, .card h2 { margin: 0 0 10px; }
+.panel p { margin: 0; color: var(--muted); line-height: 1.6; }
+.panel ul { margin: 0; padding-left: 18px; color: var(--muted); line-height: 1.8; }
+
+.card { background: radial-gradient(1200px 500px at 50% 0%, rgba(74,163,255,0.10), transparent), var(--panel2); }
+.card-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+
+.terminal {
+  background: #070a0e;
+  border: 1px solid #1a2432;
+  border-radius: 12px;
+  padding: 12px;
+  overflow: auto;
+  color: #d7e3f4;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.hint { color: var(--muted); font-size: 13px; }
+.muted { color: var(--muted); }
+
+.timeline { display: grid; gap: 10px; }
+.step { display: grid; grid-template-columns: 16px 1fr; gap: 10px; align-items: start; }
+.dot { width: 10px; height: 10px; border-radius: 999px; background: var(--accent); margin-top: 6px; }
+.step h3 { margin: 0 0 4px; }
+.step p { margin: 0; color: var(--muted); line-height: 1.6; }
+
+.footer { border-top: 1px solid var(--border); padding: 18px 0; }
+.footer-row { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
