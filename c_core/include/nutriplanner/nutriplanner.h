@@ -27,7 +27,7 @@ typedef struct {
     int fat_g;
 } np_meal_t;
 
-// A day log = dynamic array of meals for the day
+// A day log = dynamic array of meals for the day (DMA)
 typedef struct {
     np_meal_t *meals;
     size_t count;
