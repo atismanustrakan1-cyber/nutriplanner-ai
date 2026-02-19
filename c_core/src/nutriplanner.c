@@ -36,3 +36,24 @@ np_macros_t np_macro_targets(int calories, double weight_kg) {
 
     return result;
 }
+
+int np_daily_calorie_target(double weight_kg, np_goal_t goal) {
+    int base = round(30 * weight_kg);
+    int target;
+
+    if(weight_kg ≤ 0)
+        return -1;
+    if(goal == NP_GOAL_LOSS)
+        target = base-500;
+    else if(goal == NP_GOAL_GAIN)
+        target = base + 300;
+    else if(goal == NP_GOAL_MAINTAIN)
+        target = base;
+
+    if(target < 1200)
+        target = 1200;
+    if(target > 4500)
+        target = 4500;
+
+    return target;
+}
