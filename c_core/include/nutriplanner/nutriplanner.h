@@ -27,12 +27,22 @@ typedef struct {
     int fat_g;
 } np_meal_t;
 
+typedef struct {
+    boolean sex; // 0 = female, 1 = male
+    int weight_kg;
+    int height_cm;
+    int age_years;
+} np_user_t;
+
+
 // A day log = dynamic array of meals for the day (DMA)
 typedef struct {
     np_meal_t *meals;
     size_t count;
     size_t capacity;
 } np_daylog_t;
+
+
 
 // Returns the recommended daily calorie target.
 // MVP heuristic:

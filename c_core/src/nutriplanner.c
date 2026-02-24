@@ -3,10 +3,22 @@
 #include <stdlib.h>
 #include <math.h>
 
-int np_daily_calorie_target(double weight_kg, np_goal_t goal) {
-    if (weight_kg <= 0) return -1;
-    int base = (int)round(30 * weight_kg);
-    int target = base;
+int nearest50(double calories) {
+    return (int)(round(calories / 50.0) * 50);
+}
+
+int np_daily_calorie_target(np_user_t user, np_goal_t goal) {
+    if (user.weight_kg <= 0) return -1;
+    if(user.sex == 1){
+        double base = 10* user.weight_kg + 6.25* user.height_cm - 5* user.age_years + 5;
+        return (int)round(base);
+    }
+    else{
+        double base = 10* user.weight_kg + 6.25* user.height_cm - 5* user.age_years - 161;
+        return (int)round(base);
+    }
+
+    int target = nearest50(base);
     if(goal == NP_GOAL_LOSS)
         target -= 500;
     else if(goal == NP_GOAL_GAIN)
@@ -15,7 +27,7 @@ int np_daily_calorie_target(double weight_kg, np_goal_t goal) {
     if (target > 4500) target = 4500;
     return target;
 }
-
+ 
 np_macros_t np_macro_targets(int calories, double weight_kg) {
     np_macros_t result = {0, 0, 0, 0};
 
