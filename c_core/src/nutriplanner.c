@@ -19,6 +19,7 @@ int np_daily_calorie_target(np_user_t user, np_goal_t goal) {
     }
 
     int target = nearest50(base);
+    
     if(goal == NP_GOAL_LOSS)
         target -= 500;
     else if(goal == NP_GOAL_GAIN)
