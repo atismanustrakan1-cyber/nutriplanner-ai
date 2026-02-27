@@ -1,0 +1,1 @@
+add_library(nutriplanner SHARED src/nutriplanner.c);

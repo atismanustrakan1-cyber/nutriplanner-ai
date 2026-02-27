@@ -98,3 +98,40 @@ ctest --test-dir c_core/build --output-on-failure
   document.getElementById("randomize")?.addEventListener("click", randomDemo);
   document.getElementById("calculate")?.addEventListener("click", calculateDemo);
 });
+
+
+  // Run Demo button: prevent the # link from jumping to the top
+  document.getElementById("runDemoBtn")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    runCalc();
+  });
+
+  // Ping backend after the page is ready
+  testBackend();
+
+async function testBackend() {
+    const response = await fetch("http://127.0.0.1:8000/health");
+    const data = await response.json();
+    console.log(data);
+    document.getElementById("result")?.innerText = data.status;}
+
+document.addEventListener("DOMContentLoaded", testBackend);
+
+function runCalc() {
+  const user = {
+    weight_kg: 70,
+    height_cm: 175,
+    age_years: 20,
+    sex: 1
+  };
+
+  const calories = np_daily_calorie_target(user, "maintain");
+  const macros = np_macro_targets(calories, user.weight_kg);
+
+  document.getElementById("demoOut").textContent =
+`Daily target:
+Calories: ${calories}
+Protein:  ${macros.protein_g} g
+Carbs:    ${macros.carbs_g} g
+Fat:      ${macros.fat_g} g`;
+}
