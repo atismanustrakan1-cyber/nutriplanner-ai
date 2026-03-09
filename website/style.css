@@ -1030,6 +1030,30 @@ main > .page-main + .hero { padding: 24px 0 32px; }
 .settings-actions { display: flex; align-items: center; gap: 16px; margin-top: 28px; }
 .settings-saved { font-size: 0.875rem; }
 
+.settings-budget-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 10px;
+}
+.settings-label-inline {
+  margin: 0;
+  font-weight: 500;
+  font-size: 0.8125rem;
+}
+.settings-input-inline {
+  max-width: 140px;
+}
+.settings-budget-summary {
+  margin: 8px 0 0;
+  font-size: 0.8125rem;
+}
+.settings-budget-summary.over {
+  color: var(--muted);
+  opacity: 0.85;
+}
+
 /* ----- Light theme ----- */
 [data-theme="light"] {
   --bg: #f2f4f6;

@@ -59,6 +59,11 @@
         <div class="settings-group">
           <label class="settings-label" for="settingsBudget">Weekly food budget ($)</label>
           <input type="number" id="settingsBudget" class="settings-input" placeholder="Optional" min="0" step="1" />
+          <div class="settings-budget-row">
+            <label class="settings-label settings-label-inline" for="settingsSpent">Spent so far this week ($)</label>
+            <input type="number" id="settingsSpent" class="settings-input settings-input-inline" placeholder="0" min="0" step="1" />
+          </div>
+          <p id="settingsBudgetSummary" class="settings-budget-summary muted" aria-live="polite"></p>
         </div>
         <div class="settings-group">
           <label class="settings-label" for="settingsStock">What I have on hand (stock)</label>

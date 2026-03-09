@@ -43,7 +43,21 @@
         lines.push("User's dietary restrictions: " + s.dietaryRestrictions.trim());
       }
       if (s.weeklyBudget != null && s.weeklyBudget !== "") {
-        lines.push("User's weekly food budget: $" + String(s.weeklyBudget).trim());
+        var budgetNum = parseFloat(String(s.weeklyBudget).trim());
+        var spentNum = s.weeklySpent != null && s.weeklySpent !== "" ? parseFloat(String(s.weeklySpent).trim()) : NaN;
+        if (!isNaN(budgetNum) && budgetNum > 0) {
+          if (!isNaN(spentNum) && spentNum >= 0) {
+            var remaining = budgetNum - spentNum;
+            var status = remaining >= 0
+              ? "Remaining budget this week: $" + remaining.toFixed(0) + " out of $" + budgetNum.toFixed(0) + "."
+              : "User is over budget by $" + Math.abs(remaining).toFixed(0) + " this week (spent $" + spentNum.toFixed(0) + " on a $" + budgetNum.toFixed(0) + " budget).";
+            lines.push("User's weekly food budget: $" + budgetNum.toFixed(0) + ". " + status);
+          } else {
+            lines.push("User's weekly food budget: $" + budgetNum.toFixed(0) + ".");
+          }
+        } else {
+          lines.push("User's weekly food budget (text): " + String(s.weeklyBudget).trim());
+        }
       }
       if (s.stockNotes && s.stockNotes.trim()) {
         lines.push("What user has on hand (stock): " + s.stockNotes.trim());
