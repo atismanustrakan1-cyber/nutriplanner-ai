@@ -190,6 +190,7 @@
     var weightEl = document.getElementById("weightInput");
     var goalEl = document.getElementById("goalInput");
     var overrideEl = document.getElementById("calOverride");
+    var overrideToastEl = document.getElementById("calOverrideToast");
     if (!weightEl || !goalEl) return;
 
     var weight = parseFloat(weightEl.value);
@@ -202,19 +203,39 @@
     }
 
     var cal = override;
+    var forcedMin = false;
     if (cal == null || cal <= 0) {
       cal = window.np_daily_calorie_target(weight, goal);
       if (cal === -1) {
         renderTargetOutput("Invalid weight.", null, true);
+        if (overrideToastEl) {
+          overrideToastEl.textContent = "";
+          overrideToastEl.classList.remove("show");
+        }
         return;
       }
     } else {
+      if (cal < 1200) forcedMin = true;
       cal = Math.max(1200, Math.min(4500, cal));
     }
 
     var macros = window.np_macro_targets(cal, weight);
     setStoredTargets(cal, macros);
     renderTargetOutput(cal, macros, false);
+
+    if (overrideToastEl) {
+      if (forcedMin) {
+        overrideToastEl.textContent = "That calorie goal is very low. We automatically set it to 1200 kcal as a minimum.";
+        overrideToastEl.classList.add("show");
+        clearTimeout(calculateTargets._toastTimer);
+        calculateTargets._toastTimer = setTimeout(function () {
+          overrideToastEl.classList.remove("show");
+        }, 3500);
+      } else {
+        overrideToastEl.classList.remove("show");
+      }
+    }
+    if (!weightEl || !goalEl) return;
   }
 
   function applySliderMacros() {

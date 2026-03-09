@@ -679,6 +679,25 @@ main > .page-main + .hero { padding: 24px 0 32px; }
 .hint { color: var(--muted); font-size: 0.8125rem; }
 .muted { color: var(--muted); }
 
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  max-width: 280px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--fg-soft);
+  font-size: 0.8125rem;
+  box-shadow: var(--shadow);
+  z-index: 1200;
+  display: none;
+}
+.toast.show {
+  display: block;
+}
+
 /* ----- Timeline / roadmap ----- */
 .timeline { display: grid; gap: 16px; }
 .step {
