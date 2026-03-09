@@ -269,7 +269,16 @@
       li.className = "meal-item";
       var title = (m.name && m.name.trim()) ? "Meal " + (i + 1) + ": " + m.name.trim() : "Meal " + (i + 1);
       var macros = "P: " + m.protein_g + "g • C: " + m.carbs_g + "g • F: " + m.fat_g + "g";
-      li.innerHTML = "<div class=\"meal-item-left\"><span class=\"meal-item-name\">" + title.replace(/</g, "&lt;").replace(/>/g, "&gt;") + "</span><span class=\"meal-item-macros\">" + macros + "</span></div><div class=\"meal-item-cal\">" + m.calories + " kcal</div>";
+      li.innerHTML =
+        "<div class=\"meal-item-left\">" +
+          "<span class=\"meal-item-name\">" + title.replace(/</g, "&lt;").replace(/>/g, "&gt;") + "</span>" +
+          "<span class=\"meal-item-macros\">" + macros + "</span>" +
+        "</div>" +
+        "<div class=\"meal-item-actions\">" +
+          "<span class=\"meal-item-cal\">" + m.calories + " kcal</span>" +
+          "<button type=\"button\" class=\"btn link small meal-edit-btn\" data-idx=\"" + i + "\">Edit</button>" +
+          "<button type=\"button\" class=\"btn ghost small meal-delete-btn\" data-idx=\"" + i + "\">Remove</button>" +
+        "</div>";
       listEl.appendChild(li);
     });
   }
@@ -313,6 +322,14 @@
     var progressEl = document.getElementById("progressOutput");
     if (!addBtn) return;
 
+    var nameEl = document.getElementById("mealName");
+    var calEl = document.getElementById("mealCal");
+    var pEl = document.getElementById("mealP");
+    var cEl = document.getElementById("mealC");
+    var fEl = document.getElementById("mealF");
+    var addBtnDefaultText = addBtn.textContent || "Add meal";
+    var editingIndex = null;
+
     var targets = getStoredTargets() || DEFAULT_TARGETS;
     var targetCal = targets.targetCalories;
     var targetMacros = targets.targetMacros;
@@ -331,21 +348,31 @@
     }
 
     addBtn.addEventListener("click", function () {
-      var nameEl = document.getElementById("mealName");
       var name = nameEl && nameEl.value ? nameEl.value.trim() : "";
-      var cal = parseInt(document.getElementById("mealCal").value, 10) || 0;
-      var p = parseInt(document.getElementById("mealP").value, 10) || 0;
-      var c = parseInt(document.getElementById("mealC").value, 10) || 0;
-      var f = parseInt(document.getElementById("mealF").value, 10) || 0;
+      var cal = parseInt(calEl.value, 10) || 0;
+      var p = parseInt(pEl.value, 10) || 0;
+      var c = parseInt(cEl.value, 10) || 0;
+      var f = parseInt(fEl.value, 10) || 0;
       if (cal < 0 || p < 0 || c < 0 || f < 0) return;
-      if (window.np_daylog_add_meal(daylog, { name: name, calories: cal, protein_g: p, carbs_g: c, fat_g: f })) {
-        if (nameEl) nameEl.value = "";
-        document.getElementById("mealCal").value = "";
-        document.getElementById("mealP").value = "";
-        document.getElementById("mealC").value = "";
-        document.getElementById("mealF").value = "";
-        if (document.getElementById("mealName")) document.getElementById("mealName").focus();
+
+      var mealData = { name: name, calories: cal, protein_g: p, carbs_g: c, fat_g: f };
+
+      if (editingIndex !== null && editingIndex >= 0 && editingIndex < daylog.meals.length) {
+        daylog.meals[editingIndex] = mealData;
+        editingIndex = null;
+        addBtn.textContent = addBtnDefaultText;
+      } else {
+        if (!window.np_daylog_add_meal(daylog, mealData)) {
+          return;
+        }
       }
+
+      if (nameEl) nameEl.value = "";
+      if (calEl) calEl.value = "";
+      if (pEl) pEl.value = "";
+      if (cEl) cEl.value = "";
+      if (fEl) fEl.value = "";
+      if (nameEl) nameEl.focus();
       saveAndRender();
     });
 
@@ -353,6 +380,45 @@
       var el = document.getElementById(id);
       if (el) el.addEventListener("keydown", function (e) { if (e.key === "Enter") addBtn.click(); });
     });
+
+    if (listEl) {
+      listEl.addEventListener("click", function (e) {
+        var editBtn = e.target.closest && e.target.closest(".meal-edit-btn");
+        var deleteBtn = e.target.closest && e.target.closest(".meal-delete-btn");
+
+        if (editBtn) {
+          var idx = parseInt(editBtn.getAttribute("data-idx"), 10);
+          if (isNaN(idx) || idx < 0 || idx >= daylog.meals.length) return;
+          var m = daylog.meals[idx];
+          if (!m) return;
+          if (nameEl) nameEl.value = m.name || "";
+          if (calEl) calEl.value = m.calories != null ? String(m.calories) : "";
+          if (pEl) pEl.value = m.protein_g != null ? String(m.protein_g) : "";
+          if (cEl) cEl.value = m.carbs_g != null ? String(m.carbs_g) : "";
+          if (fEl) fEl.value = m.fat_g != null ? String(m.fat_g) : "";
+          editingIndex = idx;
+          addBtn.textContent = "Update meal";
+          if (nameEl) nameEl.focus();
+          return;
+        }
+
+        if (deleteBtn) {
+          var dIdx = parseInt(deleteBtn.getAttribute("data-idx"), 10);
+          if (isNaN(dIdx) || dIdx < 0 || dIdx >= daylog.meals.length) return;
+          daylog.meals.splice(dIdx, 1);
+          if (editingIndex === dIdx) {
+            editingIndex = null;
+            addBtn.textContent = addBtnDefaultText;
+            if (nameEl) nameEl.value = "";
+            if (calEl) calEl.value = "";
+            if (pEl) pEl.value = "";
+            if (cEl) cEl.value = "";
+            if (fEl) fEl.value = "";
+          }
+          saveAndRender();
+        }
+      });
+    }
 
     var foodSearchInput = document.getElementById("foodSearchInput");
     var foodSearchBtn = document.getElementById("foodSearchBtn");
