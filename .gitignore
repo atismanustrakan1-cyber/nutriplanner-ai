@@ -7,3 +7,11 @@ c_core/build/
 # CMake
 CMakeCache.txt
 CMakeFiles/
+
+# Env and secrets (never commit API keys)
+.env
+.env.local
+
+# Python
+__pycache__/
+*.pyc

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Settings — NutriPlanner AI</title>
+  <meta name="description" content="Customize your name and UI preferences." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="container">
+      <div class="brand">
+        <img src="logo.png" alt="NutriPlanner AI" class="logo" />
+        <div>
+          <div class="title">NutriPlanner AI</div>
+          <div class="subtitle">Hack@UCF</div>
+        </div>
+      </div>
+      <nav class="nav" id="nav">
+        <a href="index.html">Home</a>
+        <a href="targets.html">Set Targets</a>
+        <a href="daylog.html">Day Log</a>
+        <span id="userGreeting" class="user-greeting"></span>
+        <a href="settings.html">Settings</a>
+        <a class="btn" href="https://github.com/atismanustrakan1-cyber/nutriplanner-ai" target="_blank" rel="noreferrer">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page-main">
+    <div class="container">
+      <header class="page-header">
+        <h1>Settings</h1>
+        <p class="lead muted">Personalize your name and how the app looks.</p>
+      </header>
+
+      <div class="panel settings-panel settings-name-panel">
+        <div class="settings-name-header">
+          <span class="settings-name-icon" aria-hidden="true">👋</span>
+          <div>
+            <h2 class="settings-name-title">Your name</h2>
+            <p class="settings-name-desc">We’ll use this to greet you (e.g. “Hi, Alex”) in the nav and on the home page.</p>
+          </div>
+        </div>
+        <div class="settings-name-input-wrap">
+          <input type="text" id="settingsName" class="settings-name-input" placeholder="Enter your name" maxlength="50" autocomplete="name" />
+          <button type="button" class="btn primary" id="settingsNameConfirm">Confirm</button>
+        </div>
+      </div>
+
+      <div class="panel settings-panel">
+        <h2>Appearance</h2>
+        <div class="settings-group">
+          <span class="settings-group-label">Theme</span>
+          <div class="settings-options" role="group" aria-label="Theme">
+            <label class="settings-option-btn"><input type="radio" name="theme" value="dark" checked /> <span>Dark</span></label>
+            <label class="settings-option-btn"><input type="radio" name="theme" value="light" /> <span>Light</span></label>
+          </div>
+        </div>
+        <div class="settings-group">
+          <span class="settings-group-label">Accent color</span>
+          <div class="settings-options" role="group" aria-label="Accent color">
+            <label class="settings-option-btn"><input type="radio" name="accent" value="default" checked /> <span>Default</span></label>
+            <label class="settings-option-btn"><input type="radio" name="accent" value="warm" /> <span>Warm</span></label>
+            <label class="settings-option-btn"><input type="radio" name="accent" value="green" /> <span>Green</span></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-actions">
+        <button type="button" class="btn primary" id="settingsSave">Save changes</button>
+        <span class="settings-saved muted" id="settingsSaved" aria-live="polite"></span>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-row">
+      <span>© <span id="year"></span> NutriPlanner AI</span>
+      <span class="muted">C-first MVP • team project</span>
+    </div>
+  </footer>
+
+  <script src="nav.js"></script>
+  <script src="script.js"></script>
+  <script src="settings.js"></script>
+</body>
+</html>

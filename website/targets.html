@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Set Targets — NutriPlanner AI</title>
+  <meta name="description" content="Calculate daily calorie and macro targets from weight and goal." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="container">
+      <div class="brand">
+        <img src="logo.png" alt="NutriPlanner AI" class="logo" />
+        <div>
+          <div class="title">NutriPlanner AI</div>
+          <div class="subtitle">Hack@UCF</div>
+        </div>
+      </div>
+      <nav class="nav" id="nav">
+        <a href="index.html">Home</a>
+        <a href="targets.html">Set Targets</a>
+        <a href="daylog.html">Day Log</a>
+        <span id="userGreeting" class="user-greeting"></span>
+        <a href="settings.html">Settings</a>
+        <a class="btn" href="https://github.com/atismanustrakan1-cyber/nutriplanner-ai" target="_blank" rel="noreferrer">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page-main">
+    <div class="container">
+      <header class="page-header">
+        <h1>Set targets</h1>
+        <p class="lead muted">Enter weight and goal. Your targets are used on the Day Log page (meals and AI chat).</p>
+      </header>
+
+      <div class="card">
+        <h2>Your targets</h2>
+        <p class="card-desc">Optional: set a daily calorie override, or leave blank to use the formula.</p>
+
+        <div class="inputs">
+          <label>Weight (kg) <input type="number" id="weightInput" value="70" min="1" step="0.1" /></label>
+          <label>Goal
+            <select id="goalInput">
+              <option value="-1">Loss</option>
+              <option value="0" selected>Maintain</option>
+              <option value="1">Gain</option>
+            </select>
+          </label>
+          <label class="optional">Daily calorie override (optional) <input type="number" id="calOverride" placeholder="Auto" min="0" /></label>
+          <button class="btn primary" id="calculate">Calculate targets</button>
+        </div>
+
+        <div class="target-output" id="targetOutput" aria-live="polite">
+          <div class="target-results" id="targetResults">
+            <div class="target-stats">
+              <div class="target-stat"><span class="target-stat-value" id="outCal">2100</span><span class="target-stat-label">Calories</span></div>
+              <div class="target-stat"><span class="target-stat-value" id="outProtein">112</span><span class="target-stat-label">Protein (g)</span></div>
+              <div class="target-stat"><span class="target-stat-value" id="outCarbs">230</span><span class="target-stat-label">Carbs (g)</span></div>
+              <div class="target-stat"><span class="target-stat-value" id="outFat">56</span><span class="target-stat-label">Fat (g)</span></div>
+            </div>
+            <div class="target-chart-wrap">
+              <h4 class="target-chart-title">Macro split (by calories)</h4>
+              <div class="target-chart-row">
+                <div class="target-chart-left">
+                  <div class="target-chart-pie-legend">
+                    <div class="target-pie" id="targetPie" role="img" aria-label="Macro distribution pie chart"></div>
+                    <div class="target-legend" id="targetLegend"></div>
+                  </div>
+                  <div class="target-ai-suggestion" id="targetAiSuggestion" aria-live="polite"></div>
+                </div>
+                <div class="target-chart-right">
+                  <div class="target-breakdown target-panel">
+                    <h5 class="target-panel-title">1. The "Math" breakdown (calories per macro)</h5>
+                    <p class="target-panel-desc">How your total calories are divided. Connects gram targets to the pie chart.</p>
+                    <ul class="target-breakdown-list" id="targetMathBreakdown" aria-live="polite"></ul>
+                  </div>
+                  <div class="target-gperkg target-panel">
+                    <h5 class="target-panel-title">2. Grams per kilogram (bodyweight)</h5>
+                    <p class="target-panel-desc">Macros relative to your weight—common for fitness goals.</p>
+                    <ul class="target-breakdown-list" id="targetGperKg" aria-live="polite"></ul>
+                  </div>
+                  <div class="target-sliders target-panel">
+                    <h5 class="target-panel-title">3. Customize macro split</h5>
+                    <p class="target-panel-desc">Adjust for Keto, high protein, etc. Pie and targets update automatically.</p>
+                    <div class="target-slider-group">
+                      <label class="target-slider-label"><span id="targetSliderPctP">21</span>% Protein</label>
+                      <input type="range" id="sliderProtein" class="target-slider" min="10" max="50" value="21" />
+                    </div>
+                    <div class="target-slider-group">
+                      <label class="target-slider-label"><span id="targetSliderPctF">24</span>% Fat</label>
+                      <input type="range" id="sliderFat" class="target-slider" min="10" max="50" value="24" />
+                    </div>
+                    <p class="target-slider-note muted">Carbs: <span id="targetSliderPctC">55</span>% (remainder)</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="target-error" id="targetError" style="display: none;"></p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-row">
+      <span>© <span id="year"></span> NutriPlanner AI</span>
+      <span class="muted">C-first MVP • team project</span>
+    </div>
+  </footer>
+
+  <script src="nutriplanner.js"></script>
+  <script src="nav.js"></script>
+  <script src="script.js"></script>
+  <script src="settings.js"></script>
+</body>
+</html>

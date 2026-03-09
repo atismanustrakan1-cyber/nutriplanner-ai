@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Day Log — NutriPlanner AI</title>
+  <meta name="description" content="Log meals and see totals vs targets with remaining amounts." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="container">
+      <div class="brand">
+        <img src="logo.png" alt="NutriPlanner AI" class="logo" />
+        <div>
+          <div class="title">NutriPlanner AI</div>
+          <div class="subtitle">Hack@UCF</div>
+        </div>
+      </div>
+      <nav class="nav" id="nav">
+        <a href="index.html">Home</a>
+        <a href="targets.html">Set Targets</a>
+        <a href="daylog.html">Day Log</a>
+        <span id="userGreeting" class="user-greeting"></span>
+        <a href="settings.html">Settings</a>
+        <a class="btn" href="https://github.com/atismanustrakan1-cyber/nutriplanner-ai" target="_blank" rel="noreferrer">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page-main">
+    <div class="container">
+      <header class="page-header">
+        <h1>Day log</h1>
+        <p class="lead muted daylog-intro">Add meals and see progress vs your targets. Set targets first on <a href="targets.html">Set Targets</a>. Ask the AI below to compare your intake to your goals.</p>
+      </header>
+
+      <div class="daylog-grid">
+        <div class="daylog-add-col">
+          <p class="daylog-col-spacer progress-panel-actions" aria-hidden="true">&nbsp;</p>
+          <div class="panel food-search-panel">
+            <h3>Search food</h3>
+            <div class="food-search-wrap food-search-autocomplete-wrap">
+              <input type="search" id="foodSearchInput" class="food-search-input" placeholder="Search food..." maxlength="120" autocomplete="off" />
+              <button type="button" class="btn primary" id="foodSearchBtn">Search</button>
+              <button type="button" class="btn ghost btn-icon" id="scanFoodBtn" title="Scan food with camera" aria-label="Scan food">
+                <span class="btn-icon-camera" aria-hidden="true"></span>
+              </button>
+              <div class="food-search-autocomplete" id="foodSearchAutocomplete" role="listbox" aria-label="Food suggestions" hidden></div>
+            </div>
+            <div class="food-search-empty-state" id="foodSearchEmptyState" aria-hidden="true">
+              <span class="food-search-empty-icon" aria-hidden="true">🔍</span>
+              <p class="food-search-empty-text">Search for an ingredient to see its nutritional info.</p>
+            </div>
+            <div class="food-search-results" id="foodSearchResults" hidden aria-live="polite"></div>
+          </div>
+        </div>
+
+        <div class="daylog-progress-col">
+          <p class="progress-panel-actions">
+            <button type="button" class="btn ghost small" id="resetStorage" title="Clear saved targets and meals">Reset saved data</button>
+          </p>
+          <div class="panel add-meal-panel">
+            <h3>Add meal</h3>
+            <p class="muted">Enter calories and macros (grams). Use 0 for unknown.</p>
+            <div class="inputs inputs-inline add-meal-name-row">
+              <label class="add-meal-name-label">Name of meal <input type="text" id="mealName" placeholder="e.g. Lunch" maxlength="80" /></label>
+            </div>
+            <div class="inputs inputs-inline add-meal-macros-grid">
+              <label>Cal <input type="number" id="mealCal" min="0" placeholder="0" /></label>
+              <label>Protein (g) <input type="number" id="mealP" min="0" placeholder="0" /></label>
+              <label>Carbs (g) <input type="number" id="mealC" min="0" placeholder="0" /></label>
+              <label>Fat (g) <input type="number" id="mealF" min="0" placeholder="0" /></label>
+            </div>
+            <button class="btn primary" id="addMeal">Add meal</button>
+          </div>
+          <div class="panel progress-panel">
+            <h3>Progress</h3>
+            <div id="progressOutput" class="progress-output" aria-live="polite">
+              <p class="muted">Load targets from Set Targets, then add meals to see totals and remaining.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="daylog-meals-chat-row">
+        <div class="panel meals-list-panel">
+          <h3>Meals today</h3>
+          <ul id="mealsList" class="meals-list"></ul>
+          <p id="mealsEmpty" class="muted">No meals logged yet.</p>
+        </div>
+
+        <section class="daylog-chat-section" id="chat">
+          <div class="chat-box chat-box-embedded">
+            <div class="chat-messages" id="chatMessages">
+              <div class="chat-msg assistant">
+                <span class="chat-role">AI</span>
+                <p>Hi! I can help with nutrition, your day log, or how your meals compare to your targets. What would you like to know?</p>
+              </div>
+            </div>
+            <div class="chat-input-wrap">
+              <textarea id="chatInput" rows="1" placeholder="Type a message..." maxlength="4000"></textarea>
+              <button type="button" class="btn primary" id="chatSend" aria-label="Send">Send</button>
+            </div>
+            <p id="chatDayLogStatus" class="chat-daylog-status muted" aria-live="polite"></p>
+            <p id="chatError" class="chat-error" aria-live="polite"></p>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <div class="scan-food-overlay" id="scanFoodOverlay" role="dialog" aria-modal="true" aria-labelledby="scanFoodTitle" hidden>
+    <div class="scan-food-modal">
+      <h3 class="scan-food-title" id="scanFoodTitle">Scan food</h3>
+      <p class="muted scan-food-desc">Point your camera at the food, then capture.</p>
+      <div class="scan-food-preview-wrap">
+        <video id="scanFoodVideo" class="scan-food-video" autoplay playsinline muted></video>
+        <canvas id="scanFoodCanvas" class="scan-food-canvas" hidden></canvas>
+      </div>
+      <p id="scanFoodStatus" class="scan-food-status muted" aria-live="polite"></p>
+      <div class="scan-food-actions">
+        <button type="button" class="btn ghost" id="scanFoodCancel">Cancel</button>
+        <button type="button" class="btn primary" id="scanFoodCapture">Capture</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="reset-confirm-overlay" id="resetConfirmOverlay" role="dialog" aria-modal="true" aria-labelledby="resetConfirmTitle" hidden>
+    <div class="reset-confirm-modal">
+      <h3 class="reset-confirm-title" id="resetConfirmTitle">Reset saved data?</h3>
+      <p class="reset-confirm-msg">This will clear all saved targets and meals. You will need to set targets and log meals again.</p>
+      <div class="reset-confirm-actions">
+        <button type="button" class="btn ghost" id="resetConfirmCancel">Cancel</button>
+        <button type="button" class="btn primary" id="resetConfirmOk">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="container footer-row">
+      <span>© <span id="year"></span> NutriPlanner AI</span>
+      <span class="muted">C-first MVP • team project</span>
+    </div>
+  </footer>
+
+  <script src="nutriplanner.js"></script>
+  <script src="nav.js"></script>
+  <script src="script.js"></script>
+  <script src="settings.js"></script>
+  <script src="chat.js"></script>
+</body>
+</html>

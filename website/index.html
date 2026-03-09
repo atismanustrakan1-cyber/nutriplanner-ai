@@ -3,238 +3,91 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>NutriPlanner AI</title>
-  <meta name="description" content="C-first nutrition planning engine + future app layers." />
+  <title>NutriPlanner AI — Home</title>
+  <meta name="description" content="C-first nutrition engine: daily calorie & macro targets, meal logging, and progress tracking." />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header class="topbar">
     <div class="container">
       <div class="brand">
-        <span class="logo">NP</span>
+        <img src="logo.png" alt="NutriPlanner AI" class="logo" />
         <div>
           <div class="title">NutriPlanner AI</div>
-          <div class="subtitle">C-first nutrition core • future app layers</div>
+          <div class="subtitle">Hack@UCF • calorie targets • meal log</div>
         </div>
       </div>
-
-      <nav class="nav">
-        <a href="#overview">Overview</a>
-        <a href="#Daily_Log">Daily Log</a>
-        <a href="#build">Information</a>
-        <a href="#team">Camera Ai(Future Vision)</a>
-        <a href="#roadmap">Settings</a>
+      <nav class="nav" id="nav">
+        <a href="index.html">Home</a>
+        <a href="targets.html">Set Targets</a>
+        <a href="daylog.html">Day Log</a>
+        <span id="userGreeting" class="user-greeting"></span>
+        <a href="settings.html">Settings</a>
         <a class="btn" href="https://github.com/atismanustrakan1-cyber/nutriplanner-ai" target="_blank" rel="noreferrer">GitHub</a>
       </nav>
     </div>
   </header>
 
   <main>
+    <div class="container hero-greeting-wrap">
+      <p id="heroGreeting" class="hero-greeting"></p>
+    </div>
+    <section class="page-main">
+      <div class="container">
+        <header class="page-header">
+          <h2>Overview</h2>
+          <p class="lead muted">What NutriPlanner AI does and why we built it.</p>
+        </header>
+        <div class="grid-3">
+          <div class="panel">
+            <h3>Our goal</h3>
+            <p>NutriPlanner AI helps you plan and track your daily nutrition so you can hit your goals—whether you want to lose weight, maintain, or gain. Set your targets once, log what you eat, and see how your day stacks up with clear numbers and AI feedback.</p>
+          </div>
+          <div class="panel">
+            <h3>What you can do</h3>
+            <p><strong>Set targets</strong> — Enter your weight and goal (loss, maintain, gain) to get a daily calorie target and macro split (protein, carbs, fat). <strong>Log meals</strong> — Add each meal’s calories and macros and watch your totals and remaining amounts update. <strong>Chat with AI</strong> — Ask how your meals look, compare intake to your targets, and get simple advice.</p>
+          </div>
+          <div class="panel">
+            <h3>Who it’s for</h3>
+            <p>Anyone who wants a straightforward way to track calories and macros without extra complexity. We keep the math simple and the focus on your daily log and progress. This is a planning and tracking tool, not medical or dietary advice.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="hero">
-      <div class="container hero-grid">
-        <div>
-          <h1>Plan, track, and improve nutrition — starting with a rock-solid C engine.</h1>
-          <p class="lead">
-            NutriPlanner AI begins as a fast, testable C core that calculates calorie & macro targets, logs meals,
-            and reports progress. Later, it powers meal scheduling, grocery lists, and camera-based estimates.
-          </p>
-
-          <div class="cta">
-            <a class="btn primary" href="#build">Run the demo</a>
-            <button class="btn ghost" id="copyCmd">Copy build command</button>
-          </div>
-
-          <div class="mini">
-            <div class="chip">C core library</div>
-            <div class="chip">Unit tested</div>
-            <div class="chip">CLI demo</div>
-            <div class="chip">GitHub CI</div>
-          </div>
-        </div>
-
-        <div class="card">
-          <h2>Quick Demo Output</h2>
-          <pre class="terminal" id="demoOut">Weight (kg): 70
-Goal (-1 loss, 0 maintain, 1 gain): 0
-
-Daily target:
-Calories: 2100
-Protein:  112 g
-Carbs:    230 g
-Fat:      56 g</pre>
-
-          <div class="inputs">
-            <label>Weight (kg): <input type="number" id="weightInput" value="70" /></label>
-            <label>Height (cm): <input type="number" id="heightInput" value="180" /></label>
-            <label>Age: <input type="number" id="ageInput" value="30" /></label>
-            <label>Goal:
-              <select id="goalInput">
-                <option value="-1">Loss</option>
-                <option value="0" selected>Maintain</option>
-                <option value="1">Gain</option>
-              </select>
-            </label>
-            <label>Sex:
-              <select id="sexInput">
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
-              </select>
-            </label>
-            <label>Activity level:
-              <select id="activityInput">
-                <option value="1.2">Sedentary (light to no exercise)</option>
-                <option value="1.375">Lightly active (exercise 1-3 days/week)</option>
-                <option value="1.55" selected>Moderately active (exercise 3-5 days/week)</option>
-                <option value="1.725">Very active (exercise 6-7 days/week)</option>
-                <option value="1.9">Extra active (very hard exercise, physical job)</option>
-              </select>
-            <button class="btn small" id="calculate">Calculate</button>
-          </div>
-
-          <div class="card-row">
-            <button class="btn small" id="randomize">Randomize example</button>
-            <a class="btn small ghost" href="#mvp">What’s in MVP?</a>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section id="overview" class="section">
       <div class="container">
-        <h2>Overview</h2>
-        <div class="grid-3">
-          <div class="panel">
-            <h3>What it is</h3>
-            <p>A nutrition management project built in phases. We start with the core logic in C to keep it fast, portable, and easy to test.</p>
-          </div>
-          <div class="panel">
-            <h3>Why C first</h3>
-            <p>The core engine becomes reusable across platforms (Python wrapper, Java client, mobile later) without rewriting the math.</p>
-          </div>
-          <div class="panel">
-            <h3>How we build</h3>
-            <p>CMake + unit tests + GitHub Actions. Every change should compile and pass tests before merging.</p>
-          </div>
+        <h1>Daily calorie targets, macro tracking, and meal logging.</h1>
+        <p class="lead">
+          Set your targets, log meals, and get AI feedback on your intake.
+        </p>
+        <div class="link-cards" style="margin-top: 32px;">
+          <a href="targets.html" class="link-card">
+            <h3>Set Targets</h3>
+            <p>Enter weight and goal to get daily calorie and macro targets.</p>
+          </a>
+          <a href="daylog.html" class="link-card">
+            <h3>Day Log & AI Chat</h3>
+            <p>Add meals, see totals vs targets, and chat with the AI about your intake.</p>
+          </a>
+          <a href="settings.html" class="link-card">
+            <h3>Settings</h3>
+            <p>Set your name and customize theme and accent color.</p>
+          </a>
         </div>
       </div>
     </section>
-
-    <section id="Daily_Log" class="section alt">
-      <div class="container">
-        <h2>Daily Log</h2>
-        <div class="grid-2">
-          <div class="panel">
-            <h3>Meals Today</h3>
-            <ul>
-              <li>Daily calorie target (loss / maintain / gain)</li>
-              <li>Macro targets (protein/carbs/fat)</li>
-              <li>Meal logging for a day</li>
-              <li>Totals + remaining amounts vs target</li>
-              <li>Unit tests for public API</li>
-              <li>CLI demo for quick testing</li>
-            </ul>
-          </div>
-          <div class="panel">
-            <h3>Calorie Tracking / Macro Tracking</h3>
-            <ul>
-              <li>Meal schedule generator</li>
-              <li>Budget-friendly grocery lists</li>
-              <li>Nearby store prices + stock</li>
-              <li>Dietary restrictions & substitutions</li>
-              <li>Camera feature (CV calorie estimate)</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section id="build" class="section">
-      <div class="container">
-        <h2>Build & Run</h2>
-
-        <div class="panel">
-          <p>From the repo root (the folder that contains <code>c_core/</code>):</p>
-          <pre class="terminal" id="buildCmd">cmake -S c_core -B c_core/build
-cmake --build c_core/build
-ctest --test-dir c_core/build --output-on-failure
-./c_core/build/cli_demo</pre>
-
-          <div class="card-row">
-            <button class="btn small" id="copyBuild">Copy commands</button>
-            <span class="hint" id="copiedMsg" aria-live="polite"></span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section id="Information" class="section alt">
-      <div class="container">
-        <h2>Goals</h2>
-        <div class="grid-3">
-          <div class="panel">
-            <h3>Team Lead</h3>
-              <a class="btn primary" href="#" onclick="runCalc(); return false;">Enter Information</a>          </div>
-          <div class="panel">
-            <h3>Members</h3>
-            <ul>
-              <li>Atis Manustrakan</li>
-              <li>Derick </li>
-              <li>Isabella</li>
-              <li>Logan</li>
-            </ul>
-          </div>
-          <div class="panel">
-            <h3>Tech Stack</h3>
-            <ul>
-              <li>C (core engine)</li>
-              <li>GitHub (collab + CI)</li>
-              <li>Python / Java (later layers)</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section id="Settings" class="section">
-      <div class="container">
-        <h2>Roadmap</h2>
-        <div class="timeline">
-          <div class="step">
-            <div class="dot"></div>
-            <div>
-              <h3>Phase 1 — C Core MVP</h3>
-              <p>Targets + macros + meal logging + tests + CLI demo.</p>
-            </div>
-          </div>
-          <div class="step">
-            <div class="dot"></div>
-            <div>
-              <h3>Phase 2 — Meal Planning + Grocery List</h3>
-              <p>Recipes, schedule generation, grocery list output, budget constraints (mock pricing first).</p>
-            </div>
-          </div>
-          <div class="step">
-            <div class="dot"></div>
-            <div>
-              <h3>Phase 3 — Vision + Store Data</h3>
-              <p>Camera prototype + integration with real store pricing/availability (if feasible).</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
   </main>
 
   <footer class="footer">
     <div class="container footer-row">
       <span>© <span id="year"></span> NutriPlanner AI</span>
-      <span class="muted">Built for a team project • C-first MVP</span>
+      <span class="muted">C-first MVP • team project</span>
     </div>
   </footer>
-  </div>
-  <script src="nutriplanner.js"></script>
+
+  <script src="nav.js"></script>
   <script src="script.js"></script>
+  <script src="settings.js"></script>
 </body>
 </html>
