@@ -113,6 +113,33 @@ def food_search(q: str = ""):
     return {"foods": results}
 
 
+_UNSAFE_DIET_PATTERNS = [
+    r"\b\d{2,3}\s*cal(ories)?\s*(per\s*day|a\s*day)?\b",  # "300 calories a day"
+    r"\bunder\s*800\s*cal(ories)?\b",
+    r"\b(500|600|700)\s*cal(ories)?\s*(per\s*day|a\s*day)?\b",
+    r"\bstarvation\b",
+    r"\bstarvation[-\s]*diet\b",
+    r"\bwater\s+fast(ing)?\b",
+    r"\b(dry|absolute)\s+fast(ing)?\b",
+    r"\bno\s+food\s+for\s+\d+\s*(days|weeks)\b",
+]
+
+
+def _looks_like_unsafe_diet(text: str) -> bool:
+    """Heuristic filter for obviously unsafe diet advice (very low calories / extreme fasting)."""
+    if not text:
+        return False
+    t = text.lower()
+    # Very low explicit calorie targets
+    for pat in _UNSAFE_DIET_PATTERNS:
+        if re.search(pat, t, re.IGNORECASE):
+            return True
+    # Generic "eat nothing" style advice
+    if "eat nothing" in t or "stop eating" in t:
+        return True
+    return False
+
+
 @app.post("/api/chat")
 def chat_completion(req: ChatRequest):
     api_key = os.environ.get("OPENROUTER_API_KEY")
@@ -126,18 +153,25 @@ def chat_completion(req: ChatRequest):
     user_name = (req.user_name or "").strip()
     name_note = f" The user's name is {user_name}. Address them by name when appropriate (e.g. 'Hi {user_name}' or '{user_name}, ...')." if user_name else ""
 
+    safety_note = (
+        " Always prioritize safety: never recommend starvation-level intake or extreme fasting. "
+        "For generally healthy adults, do not suggest daily calories below about 1200 kcal unless a doctor is explicitly supervising; "
+        "avoid telling people to eat nothing, only drink water, or fast for multiple days. "
+        "If a user asks for unsafe or extreme plans, gently refuse and suggest safer alternatives and talking to a healthcare professional."
+    )
+
     if not context and name_note:
-        messages = [{"role": "system", "content": "You are the NutriPlanner AI assistant." + name_note}] + messages
+        messages = [{"role": "system", "content": "You are the NutriPlanner AI assistant." + name_note + safety_note}] + messages
     elif context:
         if context.startswith("No Day Log data"):
             system_msg = (
-                "You are the NutriPlanner AI assistant." + name_note + " " + context
+                "You are the NutriPlanner AI assistant." + name_note + safety_note + " " + context
                 + " Never say you 'don't have access' or 'can't see' their data—you are in the same app; they just need to add data on other pages first."
             )
             messages = [{"role": "system", "content": system_msg}] + messages
         else:
             system_msg = (
-                "You are the NutriPlanner AI assistant." + name_note + " "
+                "You are the NutriPlanner AI assistant." + name_note + safety_note + " "
                 "The user's Day Log data is pasted inside EACH of their messages below. "
                 "Use that data to answer. Compare meals to targets, say over/under, give brief advice. Never say you don't have access."
             )
@@ -169,7 +203,17 @@ def chat_completion(req: ChatRequest):
         data = r.json()
         choice = data.get("choices", [{}])[0]
         message = choice.get("message", {})
-        return {"message": message.get("content", ""), "role": "assistant"}
+        content = message.get("content", "") or ""
+        # Final safety filter: if the model returns clearly unsafe diet advice, replace with a safer message.
+        if _looks_like_unsafe_diet(content):
+            safe_msg = (
+                "I’m not able to support starvation-level dieting or extreme fasting. "
+                "For most adults, eating only a few hundred calories per day or going multiple days with no food can be dangerous. "
+                "Instead, aim for a gradual, sustainable calorie deficit and balanced macros, and check in with a doctor or registered dietitian "
+                "before making big changes to your intake."
+            )
+            return {"message": safe_msg, "role": "assistant"}
+        return {"message": content, "role": "assistant"}
     except requests.RequestException as e:
         raise HTTPException(status_code=502, detail=str(e))
     except (KeyError, IndexError) as e:
