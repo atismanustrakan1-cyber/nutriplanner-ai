@@ -332,6 +332,11 @@ main > .page-main + .hero { padding: 24px 0 32px; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
 .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
 @media (max-width: 900px) { .grid-3, .grid-2 { grid-template-columns: 1fr; } }
+.overview-goals-panel { margin-bottom: 24px; }
+.overview-goals-panel h3 { margin: 0 0 8px; }
+.overview-goals-panel p { margin: 0 0 12px; color: var(--fg-soft); }
+.overview-goals-list { margin: 0; padding-left: 1.25rem; color: var(--fg-soft); line-height: 1.6; }
+.overview-goals-list li { margin-bottom: 8px; }
 
 /* ----- Panels & cards ----- */
 .panel, .card {
@@ -954,14 +959,39 @@ main > .page-main + .hero { padding: 24px 0 32px; }
   box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
+.settings-section-desc { margin: 0 0 16px; font-size: 0.875rem; }
 .settings-group { margin-bottom: 24px; }
 .settings-group:last-child { margin-bottom: 0; }
-.settings-group-label {
+.settings-group-label,
+.settings-label {
   display: block;
   font-size: 0.875rem;
   font-weight: 600;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   color: var(--fg-soft);
+}
+.settings-input,
+.settings-textarea {
+  display: block;
+  width: 100%;
+  max-width: 400px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.9375rem;
+}
+.settings-textarea { min-height: 72px; resize: vertical; }
+.settings-input::placeholder, .settings-textarea::placeholder { color: var(--muted); }
+.settings-input:focus, .settings-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.settings-group-label {
+  margin-bottom: 12px;
 }
 .settings-options { display: flex; flex-wrap: wrap; gap: 10px; }
 .settings-option-btn {

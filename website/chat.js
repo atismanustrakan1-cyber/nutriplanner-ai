@@ -33,6 +33,27 @@
     return window.location.origin;
   }
 
+  function getSettingsExtras() {
+    try {
+      var raw = localStorage.getItem("nutriplanner_settings");
+      if (!raw) return [];
+      var s = JSON.parse(raw);
+      var lines = [];
+      if (s.dietaryRestrictions && s.dietaryRestrictions.trim()) {
+        lines.push("User's dietary restrictions: " + s.dietaryRestrictions.trim());
+      }
+      if (s.weeklyBudget != null && s.weeklyBudget !== "") {
+        lines.push("User's weekly food budget: $" + String(s.weeklyBudget).trim());
+      }
+      if (s.stockNotes && s.stockNotes.trim()) {
+        lines.push("What user has on hand (stock): " + s.stockNotes.trim());
+      }
+      return lines;
+    } catch (e) {
+      return [];
+    }
+  }
+
   function getNutritionContext() {
     try {
       var targetsRaw = localStorage.getItem("nutriplanner_targets");
@@ -71,6 +92,12 @@
       } else if (targets) {
         lines.push("Meals logged today: none yet. (User has set targets but has not logged any meals.)");
       }
+      var extras = getSettingsExtras();
+      if (extras.length) {
+        lines.push("");
+        lines.push("User preferences (use when suggesting meals):");
+        extras.forEach(function (line) { lines.push(line); });
+      }
       return lines.length ? lines.join("\n") : null;
     } catch (e) {
       return null;
@@ -80,7 +107,12 @@
   function getNutritionContextForApi() {
     var ctx = getNutritionContext();
     if (ctx) return ctx;
-    return "No Day Log data in this session yet. The user has not set targets or logged any meals (or they used Set Targets / Day Log in a different tab—data is shared only in the same browser). When they ask about 'my meals' or 'my day log', tell them: to get analysis they should (1) open Set Targets, enter weight and goal, click Calculate; (2) open Day Log, add their meals; then return to Chat. Do not say you 'don't have access' or 'can't see'—explain they need to add data in the app first, then you can compare.";
+    var fallback = "No Day Log data in this session yet. The user has not set targets or logged any meals (or they used Set Targets / Day Log in a different tab—data is shared only in the same browser). When they ask about 'my meals' or 'my day log', tell them: to get analysis they should (1) open Set Targets, enter weight and goal, click Calculate; (2) open Day Log, add their meals; then return to Chat. Do not say you 'don't have access' or 'can't see'—explain they need to add data in the app first, then you can compare.";
+    var extras = getSettingsExtras();
+    if (extras.length) {
+      fallback += "\n\nUser preferences (use when suggesting meals):\n" + extras.join("\n");
+    }
+    return fallback;
   }
 
   function getUserName() {

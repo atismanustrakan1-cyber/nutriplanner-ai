@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Settings — NutriPlanner AI</title>
-  <meta name="description" content="Customize your name and UI preferences." />
+  <meta name="description" content="Your name, dietary restrictions, budget, stock, and UI preferences." />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -32,7 +32,7 @@
     <div class="container">
       <header class="page-header">
         <h1>Settings</h1>
-        <p class="lead muted">Personalize your name and how the app looks.</p>
+        <p class="lead muted">Your name, diet & budget, what you have on hand, and how the app looks.</p>
       </header>
 
       <div class="panel settings-panel settings-name-panel">
@@ -46,6 +46,23 @@
         <div class="settings-name-input-wrap">
           <input type="text" id="settingsName" class="settings-name-input" placeholder="Enter your name" maxlength="50" autocomplete="name" />
           <button type="button" class="btn primary" id="settingsNameConfirm">Confirm</button>
+        </div>
+      </div>
+
+      <div class="panel settings-panel">
+        <h2>Diet & budget</h2>
+        <p class="settings-section-desc muted">The AI uses these when suggesting meals and comparing your intake.</p>
+        <div class="settings-group">
+          <label class="settings-label" for="settingsDietary">Dietary restrictions</label>
+          <textarea id="settingsDietary" class="settings-textarea" placeholder="e.g. vegetarian, no nuts, low sodium, gluten-free" rows="3" maxlength="500"></textarea>
+        </div>
+        <div class="settings-group">
+          <label class="settings-label" for="settingsBudget">Weekly food budget ($)</label>
+          <input type="number" id="settingsBudget" class="settings-input" placeholder="Optional" min="0" step="1" />
+        </div>
+        <div class="settings-group">
+          <label class="settings-label" for="settingsStock">What I have on hand (stock)</label>
+          <textarea id="settingsStock" class="settings-textarea" placeholder="e.g. chicken, rice, eggs, spinach" rows="3" maxlength="800"></textarea>
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 (function () {
   var STORAGE_KEY = "nutriplanner_settings";
-  var DEFAULTS = { name: "", theme: "dark", accent: "default" };
+  var DEFAULTS = { name: "", theme: "dark", accent: "default", dietaryRestrictions: "", weeklyBudget: "", stockNotes: "" };
 
   function getSettings() {
     try {
@@ -51,12 +51,19 @@
 
   function getFormValues() {
     var nameEl = document.getElementById("settingsName");
+    var dietaryEl = document.getElementById("settingsDietary");
+    var budgetEl = document.getElementById("settingsBudget");
+    var stockEl = document.getElementById("settingsStock");
     var theme = "dark";
     var accent = "default";
     document.querySelectorAll("input[name=\"theme\"]").forEach(function (r) { if (r.checked) theme = r.value; });
     document.querySelectorAll("input[name=\"accent\"]").forEach(function (r) { if (r.checked) accent = r.value; });
+    var budgetVal = budgetEl && budgetEl.value.trim() !== "" ? budgetEl.value.trim() : "";
     return {
       name: nameEl ? nameEl.value.trim() : "",
+      dietaryRestrictions: dietaryEl ? dietaryEl.value.trim() : "",
+      weeklyBudget: budgetVal,
+      stockNotes: stockEl ? stockEl.value.trim() : "",
       theme: theme,
       accent: accent
     };
@@ -77,6 +84,12 @@
 
     var s = getSettings();
     if (nameEl) nameEl.value = s.name || "";
+    var dietaryEl = document.getElementById("settingsDietary");
+    var budgetEl = document.getElementById("settingsBudget");
+    var stockEl = document.getElementById("settingsStock");
+    if (dietaryEl) dietaryEl.value = s.dietaryRestrictions || "";
+    if (budgetEl) budgetEl.value = s.weeklyBudget != null && s.weeklyBudget !== "" ? String(s.weeklyBudget) : "";
+    if (stockEl) stockEl.value = s.stockNotes || "";
     var themeRadios = document.querySelectorAll("input[name=\"theme\"]");
     var accentRadios = document.querySelectorAll("input[name=\"accent\"]");
     themeRadios.forEach(function (r) { r.checked = r.value === (s.theme || "dark"); });
@@ -94,7 +107,14 @@
       nameConfirmBtn.addEventListener("click", function () {
         var v = getFormValues();
         var s = getSettings();
-        setSettings({ name: v.name, theme: s.theme, accent: s.accent });
+        setSettings({
+          name: v.name,
+          theme: s.theme,
+          accent: s.accent,
+          dietaryRestrictions: s.dietaryRestrictions,
+          weeklyBudget: s.weeklyBudget,
+          stockNotes: s.stockNotes
+        });
         applySettings();
         if (savedEl) {
           savedEl.textContent = "Name saved.";
@@ -107,7 +127,14 @@
     if (saveBtn) {
       saveBtn.addEventListener("click", function () {
         var v = getFormValues();
-        setSettings({ name: v.name, theme: v.theme, accent: v.accent });
+        setSettings({
+          name: v.name,
+          theme: v.theme,
+          accent: v.accent,
+          dietaryRestrictions: v.dietaryRestrictions,
+          weeklyBudget: v.weeklyBudget,
+          stockNotes: v.stockNotes
+        });
         applySettings();
         if (savedEl) {
           savedEl.textContent = "Saved.";
