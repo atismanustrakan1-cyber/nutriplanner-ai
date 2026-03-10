@@ -190,10 +190,16 @@
     var weightEl = document.getElementById("weightInput");
     var goalEl = document.getElementById("goalInput");
     var overrideEl = document.getElementById("calOverride");
-    if (!weightEl || !goalEl) return;
+    var heightEl = document.getElementById("heightInput");
+    var ageEl = document.getElementById("ageInput");
+    var sexEl = document.getElementById("sexInput");
+    if (!weightEl || !goalEl || !heightEl || !ageEl || !sexEl) return;
 
     var weight = parseFloat(weightEl.value);
     var goal = parseInt(goalEl.value, 10);
+    var height = parseFloat(heightEl.value);
+    var age = parseInt(ageEl.value, 10);
+    var sex = sexEl.value;
     var override = overrideEl && overrideEl.value.trim() !== "" ? parseInt(overrideEl.value, 10) : null;
 
     if (!weight || weight <= 0) {
@@ -201,11 +207,26 @@
       return;
     }
 
+    if (!height || height <= 0) {
+      renderTargetOutput("Enter a valid height (cm).", null, true);
+      return;
+    }
+
+    if (!age || age <= 0) {
+      renderTargetOutput("Enter a valid age (years).", null, true);
+      return;
+    }
+
+    if (!sex || (sex !== "M" && sex !== "F")) {
+      renderTargetOutput("Select a valid sex.", null, true);
+      return;
+    }
+
     var cal = override;
     if (cal == null || cal <= 0) {
-      cal = window.np_daily_calorie_target(weight, goal);
+      cal = window.np_daily_calorie_target(weight, goal, height, age, sex);
       if (cal === -1) {
-        renderTargetOutput("Invalid weight.", null, true);
+        renderTargetOutput("Invalid inputs. Please check weight, height, age, and sex.", null, true);
         return;
       }
     } else {

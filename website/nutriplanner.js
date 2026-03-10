@@ -3,14 +3,37 @@
 // Macros: protein_g = round(1.6*weight_kg), fat_g = round(0.8*weight_kg), carbs from remainder
 
 /**
- * Daily calorie target. goal: -1 = loss, 0 = maintain, 1 = gain.
- * Returns -1 if weight_kg <= 0.
+ * Daily calorie target using the Harris-Benedict equation.
+ * goal: -1 = loss, 0 = maintain, 1 = gain.
+ * Returns -1 if any inputs are invalid.
  */
-function np_daily_calorie_target(weight_kg, goal) {
-  if (weight_kg <= 0) return -1;
-  let base = Math.round(30 * weight_kg);
-  if (goal === -1) base -= 500;
-  else if (goal === 1) base += 300;
+function np_daily_calorie_target(weight_kg, goal, height_cm, age_years, sex) {
+  const w = Number(weight_kg);
+  const h = Number(height_cm);
+  const age = Number(age_years);
+  const g = Number(goal);
+  const s = typeof sex === "string" ? sex.trim().toUpperCase() : "";
+
+  if (!(w > 0) || !(h > 0) || !(age > 0) || (s !== "M" && s !== "F")) {
+    return -1;
+  }
+
+  let bmr;
+  if (s === "M") {
+    // Revised Harris-Benedict for men
+    bmr = 88.362 + 13.397 * w + 4.799 * h - 5.677 * age;
+  } else {
+    // Revised Harris-Benedict for women
+    bmr = 447.593 + 9.247 * w + 3.098 * h - 4.330 * age;
+  }
+
+  // Assume lightly active by default
+  let base = bmr * 1.2;
+
+  if (g === -1) base -= 500;
+  else if (g === 1) base += 300;
+
+  base = Math.round(base);
   if (base < 1200) base = 1200;
   if (base > 4500) base = 4500;
   return base;

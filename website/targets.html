@@ -32,7 +32,7 @@
     <div class="container">
       <header class="page-header">
         <h1>Set targets</h1>
-        <p class="lead muted">Enter weight and goal. Your targets are used on the Day Log page (meals and AI chat).</p>
+        <p class="lead muted">Enter weight, height, age, sex, and goal. Your targets are used on the Day Log page (meals and AI chat).</p>
       </header>
 
       <div class="card">
@@ -41,6 +41,14 @@
 
         <div class="inputs">
           <label>Weight (kg) <input type="number" id="weightInput" value="70" min="1" step="0.1" /></label>
+          <label>Height (cm) <input type="number" id="heightInput" value="170" min="1" step="0.1" /></label>
+          <label>Age (years) <input type="number" id="ageInput" value="30" min="1" step="1" /></label>
+          <label>Sex
+            <select id="sexInput">
+              <option value="M">Male</option>
+              <option value="F">Female</option>
+            </select>
+          </label>
           <label>Goal
             <select id="goalInput">
               <option value="-1">Loss</option>
@@ -49,6 +57,16 @@
             </select>
           </label>
           <label class="optional">Daily calorie override (optional) <input type="number" id="calOverride" placeholder="Auto" min="0" /></label>
+          <label class="optional">Diet type
+            <select id="dietType">
+              <option value="">Balanced (default)</option>
+              <option value="high_protein">High protein</option>
+              <option value="low_carb">Low carb</option>
+              <option value="keto">Keto-style</option>
+              <option value="low_fat">Low fat</option>
+              <option value="carb_focused">Carb-focused</option>
+            </select>
+          </label>
           <button class="btn primary" id="calculate">Calculate targets</button>
         </div>
 
