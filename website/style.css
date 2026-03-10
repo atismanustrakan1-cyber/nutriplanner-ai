@@ -679,6 +679,25 @@ main > .page-main + .hero { padding: 24px 0 32px; }
 .hint { color: var(--muted); font-size: 0.8125rem; }
 .muted { color: var(--muted); }
 
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  max-width: 280px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--fg-soft);
+  font-size: 0.8125rem;
+  box-shadow: var(--shadow);
+  z-index: 1200;
+  display: none;
+}
+.toast.show {
+  display: block;
+}
+
 /* ----- Timeline / roadmap ----- */
 .timeline { display: grid; gap: 16px; }
 .step {
@@ -1029,6 +1048,30 @@ main > .page-main + .hero { padding: 24px 0 32px; }
 [data-accent="green"] .settings-option-btn:has(input:checked) { background: rgba(13, 148, 136, 0.12); border-color: var(--accent); }
 .settings-actions { display: flex; align-items: center; gap: 16px; margin-top: 28px; }
 .settings-saved { font-size: 0.875rem; }
+
+.settings-budget-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 10px;
+}
+.settings-label-inline {
+  margin: 0;
+  font-weight: 500;
+  font-size: 0.8125rem;
+}
+.settings-input-inline {
+  max-width: 140px;
+}
+.settings-budget-summary {
+  margin: 8px 0 0;
+  font-size: 0.8125rem;
+}
+.settings-budget-summary.over {
+  color: var(--muted);
+  opacity: 0.85;
+}
 
 /* ----- Light theme ----- */
 [data-theme="light"] {
