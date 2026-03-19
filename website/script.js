@@ -64,6 +64,62 @@
     };
   }
 
+  function ketoMacros(cal, weightKg) {
+    var result = { protein_g: 0, carbs_g: 0, fat_g: 0 };
+    if (cal <= 0 || weightKg <= 0) return result;
+
+    var protein_g = Math.round(1.76 * weightKg);
+    var proteinCal = protein_g * 4;
+    var remainingAfterProtein = Math.max(0, cal - proteinCal);
+    var maxCarbsByCalories = Math.floor(remainingAfterProtein / 4);
+
+    // Keep carbs in a keto-friendly window when calories allow.
+    var carbs_g = 30;
+    if (maxCarbsByCalories < 20) {
+      carbs_g = Math.max(0, maxCarbsByCalories);
+    } else {
+      carbs_g = Math.max(20, Math.min(50, Math.min(carbs_g, maxCarbsByCalories)));
+    }
+
+    var fatCal = Math.max(0, cal - proteinCal - carbs_g * 4);
+    var fat_g = Math.round(fatCal / 9);
+
+    result.protein_g = protein_g;
+    result.carbs_g = carbs_g;
+    result.fat_g = fat_g;
+    return result;
+  }
+
+  function highProteinMacros(cal, weightKg) {
+    var result = { protein_g: 0, carbs_g: 0, fat_g: 0 };
+    if (cal <= 0 || weightKg <= 0) return result;
+
+    var protein_g = Math.round(2.1 * weightKg);
+    var fat_g = Math.round(0.8 * weightKg);
+    var remainder = cal - (protein_g * 4 + fat_g * 9);
+    var carbs_g = Math.max(0, Math.floor(remainder / 4));
+
+    result.protein_g = protein_g;
+    result.carbs_g = carbs_g;
+    result.fat_g = fat_g;
+    return result;
+  }
+
+  function lowFatMacros(cal, weightKg) {
+    var result = { protein_g: 0, carbs_g: 0, fat_g: 0 };
+    if (cal <= 0 || weightKg <= 0) return result;
+
+    var protein_g = Math.round(1.8 * weightKg);
+    var fat_g = Math.round((0.18 * cal) / 9);
+    var remainder = cal - (protein_g * 4 + fat_g * 9);
+    var carbs_g = Math.max(0, Math.floor(remainder / 4));
+
+    result.protein_g = protein_g;
+    result.carbs_g = carbs_g;
+    result.fat_g = fat_g;
+    return result;
+  }
+
   function getDietTypeAndMessage(pctP, pctC, pctF) {
     var dietType = "Balanced";
     var note = "";
@@ -79,9 +135,6 @@
     } else if (pctF < 22) {
       dietType = "Low fat";
       note = "—carbs and protein carry most calories. Suits higher meal volume and lower fat intake.";
-    } else if (pctC >= 55) {
-      dietType = "Carb-focused";
-      note = "—plenty of carbs for energy and recovery; pair with protein at meals for balance.";
     } else {
       note = "—steady energy from carbs, solid protein for muscle, and enough fat for hormones. Works well for most meals.";
     }
@@ -193,7 +246,9 @@
     var heightEl = document.getElementById("heightInput");
     var ageEl = document.getElementById("ageInput");
     var sexEl = document.getElementById("sexInput");
-    if (!weightEl || !goalEl || !heightEl || !ageEl || !sexEl) return;
+    var activityEl = document.getElementById("activityInput");
+    var dietTypeEl = document.getElementById("dietType");
+    if (!weightEl || !goalEl || !heightEl || !ageEl || !sexEl || !activityEl || !dietTypeEl) return;
     var overrideToastEl = document.getElementById("calOverrideToast");
     if (!weightEl || !goalEl) return;
 
@@ -202,6 +257,8 @@
     var height = parseFloat(heightEl.value);
     var age = parseInt(ageEl.value, 10);
     var sex = sexEl.value;
+    var activity = activityEl.value;
+    var dietType = dietTypeEl.value;
     var override = overrideEl && overrideEl.value.trim() !== "" ? parseInt(overrideEl.value, 10) : null;
 
     if (!weight || weight <= 0) {
@@ -227,7 +284,7 @@
     var cal = override;
     var forcedMin = false;
     if (cal == null || cal <= 0) {
-      cal = window.np_daily_calorie_target(weight, goal, height, age, sex);
+      cal = window.np_daily_calorie_target(weight, goal, height, age, sex, activity);
       if (cal === -1) {
         renderTargetOutput("Invalid inputs. Please check weight, height, age, and sex.", null, true);
         renderTargetOutput("Invalid weight.", null, true);
@@ -242,7 +299,16 @@
       cal = Math.max(1200, Math.min(4500, cal));
     }
 
-    var macros = window.np_macro_targets(cal, weight);
+    var macros;
+    if (dietType === "keto") {
+      macros = ketoMacros(cal, weight);
+    } else if (dietType === "high_protein") {
+      macros = highProteinMacros(cal, weight);
+    } else if (dietType === "low_fat") {
+      macros = lowFatMacros(cal, weight);
+    } else {
+      macros = window.np_macro_targets(cal, weight);
+    }
     setStoredTargets(cal, macros);
     renderTargetOutput(cal, macros, false);
 

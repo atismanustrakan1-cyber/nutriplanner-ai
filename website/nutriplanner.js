@@ -1,5 +1,5 @@
-// ---------- MVP formulas (match docs/requirements.txt and C core) ----------
-// Daily calorie: base = round(30 * weight_kg); loss: -500, gain: +300; clamp [1200, 4500]
+// ---------- MVP formulas ----------
+// Daily calorie: compute BMR, multiply by activity factor, apply goal adjustment, clamp [1200, 4500]
 // Macros: protein_g = round(1.6*weight_kg), fat_g = round(0.8*weight_kg), carbs from remainder
 
 /**
@@ -7,7 +7,7 @@
  * goal: -1 = loss, 0 = maintain, 1 = gain.
  * Returns -1 if any inputs are invalid.
  */
-function np_daily_calorie_target(weight_kg, goal, height_cm, age_years, sex) {
+function np_daily_calorie_target(weight_kg, goal, height_cm, age_years, sex, activity_level) {
   const w = Number(weight_kg);
   const h = Number(height_cm);
   const age = Number(age_years);
@@ -27,8 +27,39 @@ function np_daily_calorie_target(weight_kg, goal, height_cm, age_years, sex) {
     bmr = 447.593 + 9.247 * w + 3.098 * h - 4.330 * age;
   }
 
-  // Assume lightly active by default
-  let base = bmr * 1.2;
+  // Activity factor mapping
+  // - sedentary: 1.2
+  // - lightly active: 1.375
+  // - moderately active: 1.55
+  // - very active: 1.725
+  // - extra active: 1.9
+  const activityMap = {
+    "sedentary": 1.2,
+    "lightly active": 1.375,
+    "moderately active": 1.55,
+    "very active": 1.725,
+    "extra active": 1.9
+  };
+
+  let activityMult = 1.375; // default: lightly active
+  if (activity_level != null) {
+    if (typeof activity_level === "number") {
+      activityMult = activity_level;
+    } else if (typeof activity_level === "string") {
+      const trimmed = activity_level.trim();
+      const lower = trimmed.toLowerCase();
+      const asNumber = parseFloat(lower);
+      if (Number.isFinite(asNumber) && asNumber > 0) {
+        activityMult = asNumber;
+      } else if (lower in activityMap) {
+        activityMult = activityMap[lower];
+      } else if (lower.replace(/_/g, " ") in activityMap) {
+        activityMult = activityMap[lower.replace(/_/g, " ")];
+      }
+    }
+  }
+
+  let base = bmr * activityMult;
 
   if (g === -1) base -= 500;
   else if (g === 1) base += 300;
@@ -47,8 +78,8 @@ function np_macro_targets(calories, weight_kg) {
   const result = { protein_g: 0, carbs_g: 0, fat_g: 0 };
   if (calories <= 0 || weight_kg <= 0) return result;
 
-  const protein_g = Math.round(1.6 * weight_kg);
-  const fat_g = Math.round(0.8 * weight_kg);
+  const protein_g = Math.round(1.7 * weight_kg);
+  const fat_g = Math.round(calories * 0.25 / 9);
   const remainder = calories - (protein_g * 4 + fat_g * 9);
   const carbs_g = Math.max(0, Math.floor(remainder / 4));
 

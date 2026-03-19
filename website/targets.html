@@ -56,15 +56,22 @@
               <option value="1">Gain</option>
             </select>
           </label>
+          <label>Activity level
+            <select id="activityInput">
+              <option value="1.2">Sedentary</option>
+              <option value="1.375" selected>Lightly active</option>
+              <option value="1.55">Moderately active</option>
+              <option value="1.725">Very active</option>
+              <option value="1.9">Extra active</option>
+            </select>
+          </label>
           <label class="optional">Daily calorie override (optional) <input type="number" id="calOverride" placeholder="Auto" min="0" /></label>
           <label class="optional">Diet type
             <select id="dietType">
               <option value="">Balanced (default)</option>
               <option value="high_protein">High protein</option>
-              <option value="low_carb">Low carb</option>
-              <option value="keto">Keto-style</option>
+              <option value="keto">Keto-style (low carb)</option>
               <option value="low_fat">Low fat</option>
-              <option value="carb_focused">Carb-focused</option>
             </select>
           </label>
           <button class="btn primary" id="calculate">Calculate targets</button>
