@@ -1109,3 +1109,266 @@ main > .page-main + .hero { padding: 24px 0 32px; }
   --accent-glow: rgba(13, 148, 136, 0.25);
 }
 [data-accent="green"] .logo { box-shadow: 0 4px 14px var(--accent-glow); }
+
+/* ----- Weekly planner (Apple Calendar inspired) ----- */
+.weekly-planner-page {
+  --wp-bg: var(--bg);
+  --wp-fg: var(--fg);
+  --wp-muted: var(--muted);
+  --wp-surface: var(--panel);
+  --wp-surface-2: var(--bg-elevated);
+  --wp-border: var(--border);
+  --wp-border-soft: rgba(255, 255, 255, 0.08);
+  --wp-pill-bg: rgba(255, 255, 255, 0.03);
+  --wp-pill-active-bg: rgba(255, 255, 255, 0.08);
+  --wp-remove: #c8cdd6;
+  --wp-blue-bg: rgba(96, 165, 250, 0.22);
+  --wp-blue-br: #60a5fa;
+  --wp-green-bg: rgba(74, 222, 128, 0.2);
+  --wp-green-br: #4ade80;
+  --wp-pink-bg: rgba(251, 113, 133, 0.22);
+  --wp-pink-br: #fb7185;
+  --wp-orange-bg: rgba(245, 158, 11, 0.22);
+  --wp-orange-br: #f59e0b;
+  --wp-purple-bg: rgba(192, 132, 252, 0.2);
+  --wp-purple-br: #c084fc;
+  background: var(--wp-bg);
+  color: var(--wp-fg);
+}
+.weekly-planner-page .topbar {
+  background: rgba(13, 15, 20, 0.8);
+  border-bottom-color: var(--wp-border);
+}
+.weekly-planner-page .title { color: var(--wp-fg); }
+.weekly-planner-page .subtitle { color: var(--wp-muted); }
+.weekly-planner-page .nav a { color: var(--wp-muted); }
+.weekly-planner-page .nav a.current {
+  color: var(--wp-fg);
+  background: var(--wp-pill-active-bg);
+}
+.weekly-planner-page .page-main { padding-bottom: 40px; }
+.weekly-page-header { padding-bottom: 14px; }
+.weekly-page-header .lead { color: var(--wp-muted); }
+
+.weekly-card-light {
+  background: var(--wp-surface);
+  border: 1px solid var(--wp-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.weekly-planner-card { margin-bottom: 16px; }
+.weekly-form-grid {
+  display: grid;
+  grid-template-columns: minmax(140px, 180px) minmax(120px, 160px) minmax(120px, 160px) 1fr auto;
+  gap: 10px;
+  align-items: end;
+}
+.weekly-title-input { grid-column: span 1; }
+.weekly-helper { margin: 10px 2px 0; color: var(--wp-muted); font-size: 0.8125rem; }
+
+.weekly-calendar-shell {
+  border: 1px solid var(--wp-border);
+  border-radius: 12px;
+  background: var(--wp-surface);
+  overflow: auto;
+}
+.weekly-calendar-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--wp-border);
+}
+.weekly-view-pills { display: inline-flex; gap: 6px; }
+.weekly-pill, .weekly-today-pill {
+  border: 1px solid var(--wp-border);
+  border-radius: 7px;
+  padding: 5px 10px;
+  font-size: 0.8125rem;
+  color: var(--wp-muted);
+  background: var(--wp-pill-bg);
+}
+.weekly-pill-active {
+  background: var(--wp-pill-active-bg);
+  color: var(--wp-fg);
+  font-weight: 600;
+}
+
+.weekly-calendar-grid { min-width: 980px; }
+.weekly-header-row {
+  display: grid;
+  grid-template-columns: 64px repeat(7, 1fr);
+  border-bottom: 1px solid var(--wp-border);
+}
+.weekly-time-col-header { border-right: 1px solid var(--wp-border); }
+.weekly-day-header {
+  text-align: center;
+  padding: 8px 0;
+  color: var(--wp-muted);
+  font-weight: 600;
+  border-right: 1px solid var(--wp-border-soft);
+}
+.weekly-all-day-row {
+  display: grid;
+  grid-template-columns: 64px repeat(7, 1fr);
+  border-bottom: 1px solid var(--wp-border);
+}
+.weekly-all-day-label {
+  color: var(--wp-muted);
+  font-size: 0.8125rem;
+  padding: 7px 6px;
+  border-right: 1px solid var(--wp-border);
+}
+.weekly-all-day-cell {
+  min-height: 34px;
+  border-right: 1px solid var(--wp-border-soft);
+  padding: 3px;
+}
+.weekly-all-day-event {
+  border-radius: 7px;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.weekly-all-day-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.weekly-body-row {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+}
+.weekly-time-col {
+  border-right: 1px solid var(--wp-border);
+  background: var(--wp-surface);
+}
+.weekly-hour-label {
+  height: 58px;
+  font-size: 0.75rem;
+  color: var(--wp-muted);
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--wp-border-soft);
+}
+.weekly-day-columns {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+.weekly-day-track {
+  position: relative;
+  min-height: 1392px;
+  border-right: 1px solid var(--wp-border-soft);
+  background: var(--wp-surface);
+}
+.weekly-hour-line {
+  height: 58px;
+  border-bottom: 1px solid var(--wp-border-soft);
+}
+.weekly-event-block {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  min-height: 44px;
+  border-radius: 8px;
+  padding: 4px 6px;
+  font-size: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+  cursor: grab;
+}
+.weekly-event-block.dragging {
+  cursor: grabbing;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.22);
+  z-index: 4;
+}
+.weekly-event-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.weekly-shift-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.42);
+  color: #1f2937;
+  cursor: pointer;
+  font-size: 0.82rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.weekly-shift-left { left: 3px; }
+.weekly-shift-right { right: 3px; }
+.weekly-event-block .weekly-event-row,
+.weekly-event-block .weekly-event-title { padding: 0 14px; }
+.weekly-event-time { font-weight: 600; font-size: 0.7rem; color: var(--wp-fg); }
+.weekly-event-title {
+  font-size: 0.85rem;
+  line-height: 1.2;
+  margin-top: 2px;
+  font-weight: 600;
+  color: var(--wp-fg);
+}
+.weekly-event-remove-mini {
+  border: 0;
+  background: transparent;
+  color: var(--wp-remove);
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.weekly-all-day-event .weekly-shift-btn,
+.weekly-all-day-event .weekly-event-remove-mini {
+  position: static;
+  transform: none;
+}
+
+[data-theme="light"] .weekly-shift-btn {
+  background: rgba(255, 255, 255, 0.8);
+  color: #374151;
+}
+.weekly-empty { color: var(--wp-muted); font-size: 0.8rem; }
+
+.weekly-color-blue { background: var(--wp-blue-bg); border-left: 3px solid var(--wp-blue-br); }
+.weekly-color-green { background: var(--wp-green-bg); border-left: 3px solid var(--wp-green-br); }
+.weekly-color-pink { background: var(--wp-pink-bg); border-left: 3px solid var(--wp-pink-br); }
+.weekly-color-orange { background: var(--wp-orange-bg); border-left: 3px solid var(--wp-orange-br); }
+.weekly-color-purple { background: var(--wp-purple-bg); border-left: 3px solid var(--wp-purple-br); }
+
+[data-theme="light"] .weekly-planner-page {
+  --wp-bg: #f6f7f9;
+  --wp-fg: #1f2937;
+  --wp-muted: #6b7280;
+  --wp-surface: #fff;
+  --wp-surface-2: #fff;
+  --wp-border: #e5e7eb;
+  --wp-border-soft: #eef0f4;
+  --wp-pill-bg: #fff;
+  --wp-pill-active-bg: #f3f4f6;
+  --wp-remove: #4b5563;
+  --wp-blue-bg: #dbeafe;
+  --wp-blue-br: #60a5fa;
+  --wp-green-bg: #dcfce7;
+  --wp-green-br: #4ade80;
+  --wp-pink-bg: #ffe4e6;
+  --wp-pink-br: #fb7185;
+  --wp-orange-bg: #fef3c7;
+  --wp-orange-br: #f59e0b;
+  --wp-purple-bg: #f3e8ff;
+  --wp-purple-br: #c084fc;
+}
+[data-theme="light"] .weekly-planner-page .topbar {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+@media (max-width: 900px) {
+  .weekly-form-grid { grid-template-columns: 1fr 1fr; }
+}

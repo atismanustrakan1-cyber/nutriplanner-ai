@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Weekly Planner — NutriPlanner AI</title>
+  <meta name="description" content="Plan your week with a simple calendar layout and save events." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="weekly-planner-page">
+  <header class="topbar">
+    <div class="container">
+      <div class="brand">
+        <img src="logo.png" alt="NutriPlanner AI" class="logo" />
+        <div>
+          <div class="title">NutriPlanner AI</div>
+          <div class="subtitle">Hack@UCF</div>
+        </div>
+      </div>
+      <nav class="nav" id="nav">
+        <a href="index.html">Home</a>
+        <a href="targets.html">Set Targets</a>
+        <a href="daylog.html">Day Log</a>
+        <a href="weekly-planner.html">Weekly Planner</a>
+        <span id="userGreeting" class="user-greeting"></span>
+        <a href="settings.html">Settings</a>
+        <a class="btn" href="https://github.com/atismanustrakan1-cyber/nutriplanner-ai" target="_blank" rel="noreferrer">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page-main">
+    <div class="container">
+      <header class="page-header weekly-page-header">
+        <h1>Weekly Planner</h1>
+        <p class="lead muted">A weekly plannner to organize your meals for the week with the help of AI</p>
+      </header>
+
+      <div class="card weekly-planner-card weekly-card-light">
+        <h2>Add event</h2>
+        <div class="weekly-form-grid">
+          <label>Day
+            <select id="weeklyDayInput">
+              <option value="Monday">Monday</option>
+              <option value="Tuesday">Tuesday</option>
+              <option value="Wednesday">Wednesday</option>
+              <option value="Thursday">Thursday</option>
+              <option value="Friday">Friday</option>
+              <option value="Saturday">Saturday</option>
+              <option value="Sunday">Sunday</option>
+            </select>
+          </label>
+          <label>Start time
+            <input type="time" id="weeklyStartTimeInput" />
+          </label>
+          <label>End time
+            <input type="time" id="weeklyEndTimeInput" />
+          </label>
+          <label class="weekly-title-input">Event
+            <input type="text" id="weeklyTitleInput" placeholder="e.g., Meal prep, Gym, Grocery run" />
+          </label>
+          <button class="btn primary" id="weeklyAddEvent" type="button">Add event</button>
+        </div>
+        <p class="muted weekly-helper">Tip: leave both times blank for an all-day event. If you only set a start time, the end defaults to one hour later.</p>
+      </div>
+
+      <section class="weekly-calendar-shell" aria-live="polite">
+        <div class="weekly-calendar-toolbar">
+          <div class="weekly-view-pills">
+            <span class="weekly-pill">Day</span>
+            <span class="weekly-pill weekly-pill-active">Week</span>
+            <span class="weekly-pill">Month</span>
+          </div>
+          <div class="weekly-today-pill">Today</div>
+        </div>
+        <div id="weeklyGrid" class="weekly-calendar-grid"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-row">
+      <span>© <span id="year"></span> NutriPlanner AI</span>
+      <span class="muted">C-first MVP • team project</span>
+    </div>
+  </footer>
+
+  <script src="nutriplanner.js"></script>
+  <script src="nav.js"></script>
+  <script src="script.js"></script>
+  <script src="settings.js"></script>
+</body>
+</html>

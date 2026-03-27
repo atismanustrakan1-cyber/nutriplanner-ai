@@ -1,6 +1,7 @@
 (function () {
   var STORAGE_TARGETS = "nutriplanner_targets";
   var STORAGE_MEALS = "nutriplanner_meals";
+  var STORAGE_WEEKLY_EVENTS = "nutriplanner_weekly_events";
   var DEFAULT_TARGETS = { targetCalories: 2100, targetMacros: { protein_g: 112, carbs_g: 230, fat_g: 56 } };
 
   function setYear() {
@@ -42,6 +43,22 @@
   function setStoredMeals(meals) {
     try {
       localStorage.setItem(STORAGE_MEALS, JSON.stringify(meals));
+    } catch (e) {}
+  }
+
+  function getStoredWeeklyEvents() {
+    try {
+      var raw = localStorage.getItem(STORAGE_WEEKLY_EVENTS);
+      if (!raw) return [];
+      var parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {}
+    return [];
+  }
+
+  function setStoredWeeklyEvents(events) {
+    try {
+      localStorage.setItem(STORAGE_WEEKLY_EVENTS, JSON.stringify(events));
     } catch (e) {}
   }
 
@@ -734,6 +751,325 @@
     saveAndRender();
   }
 
+  function initWeeklyPlannerPage() {
+    var gridEl = document.getElementById("weeklyGrid");
+    var dayEl = document.getElementById("weeklyDayInput");
+    var startTimeEl = document.getElementById("weeklyStartTimeInput");
+    var endTimeEl = document.getElementById("weeklyEndTimeInput");
+    var titleEl = document.getElementById("weeklyTitleInput");
+    var addBtn = document.getElementById("weeklyAddEvent");
+    if (!gridEl || !dayEl || !startTimeEl || !endTimeEl || !titleEl || !addBtn) return;
+
+    var days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    // Full day: 12:00 AM (midnight) through 11:59 PM
+    var startHour = 0;
+    var endHour = 23;
+    /** Last minute of calendar day (11:59 PM). */
+    var lastMinuteOfDay = 23 * 60 + 59;
+    /** Minute after 11:59 PM (exclusive end of day), for range math. */
+    var endOfDayExclusive = 24 * 60;
+    var hourHeight = 58;
+    var palette = ["blue", "green", "pink", "orange", "purple"];
+
+    function safeText(v) {
+      return String(v || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function toMinutes(time) {
+      if (!time || time.indexOf(":") === -1) return null;
+      var parts = time.split(":");
+      var h = parseInt(parts[0], 10);
+      var m = parseInt(parts[1], 10);
+      if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+      return h * 60 + m;
+    }
+
+    function minutesToTime(totalMinutes) {
+      var capped = Math.min(Math.max(totalMinutes, 0), lastMinuteOfDay);
+      var h = Math.floor(capped / 60);
+      var m = capped % 60;
+      var hh = String(h).padStart(2, "0");
+      var mm = String(m).padStart(2, "0");
+      return hh + ":" + mm;
+    }
+
+    function hourLabel(hour24) {
+      var suffix = hour24 >= 12 ? "PM" : "AM";
+      var display = hour24 % 12;
+      if (display === 0) display = 12;
+      return display + " " + suffix;
+    }
+
+    /** @returns {{ start: number, end: number } | null} null = all-day */
+    function getEventTimeRange(ev) {
+      if (!ev) return null;
+      var start = ev.startTime && String(ev.startTime).trim() !== "" ? toMinutes(ev.startTime) : null;
+      var end = ev.endTime && String(ev.endTime).trim() !== "" ? toMinutes(ev.endTime) : null;
+      if (start == null && ev.time && String(ev.time).trim() !== "") {
+        start = toMinutes(ev.time);
+        end = start + 60;
+      }
+      if (start == null) return null;
+      if (end == null) end = start + 60;
+      if (end <= start) end = Math.min(start + 15, lastMinuteOfDay);
+      if (end > lastMinuteOfDay) end = lastMinuteOfDay;
+      if (start > lastMinuteOfDay) start = lastMinuteOfDay;
+      if (end <= start) end = Math.min(start + 15, lastMinuteOfDay);
+      return { start: start, end: end };
+    }
+
+    function formatTimeRange(startMin, endMin) {
+      return minutesToTime(startMin) + " – " + minutesToTime(endMin);
+    }
+
+    function shiftEventDay(eventId, direction) {
+      var events = getStoredWeeklyEvents();
+      var idx = -1;
+      for (var i = 0; i < events.length; i++) {
+        if (events[i] && events[i].id === eventId) {
+          idx = i;
+          break;
+        }
+      }
+      if (idx < 0) return;
+      var dayIdx = days.indexOf(events[idx].day);
+      if (dayIdx < 0) return;
+      var nextIdx = dayIdx + direction;
+      if (nextIdx < 0) nextIdx = 0;
+      if (nextIdx >= days.length) nextIdx = days.length - 1;
+      events[idx].day = days[nextIdx];
+      setStoredWeeklyEvents(events);
+      render();
+    }
+
+    function render() {
+      var events = getStoredWeeklyEvents();
+      gridEl.innerHTML = "";
+      var allDayByDay = {};
+      var timedByDay = {};
+      days.forEach(function (d) {
+        allDayByDay[d] = [];
+        timedByDay[d] = [];
+      });
+
+      events.forEach(function (ev, idx) {
+        if (!ev || days.indexOf(ev.day) === -1) return;
+        var range = getEventTimeRange(ev);
+        if (range == null) {
+          allDayByDay[ev.day].push({ event: ev, color: palette[idx % palette.length] });
+        } else {
+          timedByDay[ev.day].push({
+            event: ev,
+            startMin: range.start,
+            endMin: range.end,
+            color: palette[idx % palette.length]
+          });
+        }
+      });
+
+      days.forEach(function (d) {
+        timedByDay[d].sort(function (a, b) { return a.startMin - b.startMin; });
+      });
+
+      var dayHeader = "<div class=\"weekly-time-col-header\"></div>" + days.map(function (d) {
+        return "<div class=\"weekly-day-header\">" + d.slice(0, 3) + "</div>";
+      }).join("");
+
+      var allDayRow = "<div class=\"weekly-all-day-label\">all-day</div>" + days.map(function (d) {
+        var items = allDayByDay[d].map(function (slot) {
+          var ev = slot.event;
+          return "<div class=\"weekly-all-day-event weekly-color-" + slot.color + "\">" +
+            "<button type=\"button\" class=\"weekly-shift-btn weekly-shift-left\" data-id=\"" + safeText(ev.id) + "\" aria-label=\"Move event left\">&#x2039;</button>" +
+            "<span class=\"weekly-all-day-title\">" + safeText(ev.title) + "</span>" +
+            "<button type=\"button\" class=\"weekly-shift-btn weekly-shift-right\" data-id=\"" + safeText(ev.id) + "\" aria-label=\"Move event right\">&#x203A;</button>" +
+            "<button type=\"button\" class=\"weekly-event-remove-mini\" data-id=\"" + safeText(ev.id) + "\" aria-label=\"Remove event\">×</button></div>";
+        }).join("");
+        return "<div class=\"weekly-all-day-cell\">" + (items || "<span class=\"weekly-empty muted\">—</span>") + "</div>";
+      }).join("");
+
+      var labels = "";
+      for (var h = startHour; h <= endHour; h++) {
+        labels += "<div class=\"weekly-hour-label\">" + hourLabel(h) + "</div>";
+      }
+
+      var tracks = days.map(function (d) {
+        var lines = "";
+        for (var h = startHour; h <= endHour; h++) {
+          lines += "<div class=\"weekly-hour-line\"></div>";
+        }
+
+        var blocks = timedByDay[d].map(function (slot) {
+          var startMins = startHour * 60;
+          var totalMins = (endHour - startHour + 1) * 60;
+          var top = ((slot.startMin - startMins) / 60) * hourHeight;
+          if (top < 0) top = 0;
+          var trackHeight = (totalMins / 60) * hourHeight;
+          var durationMin = Math.max(15, slot.endMin - slot.startMin);
+          var heightPx = Math.max(28, (durationMin / 60) * hourHeight - 2);
+          if (top + heightPx > trackHeight) heightPx = Math.max(28, trackHeight - top);
+          var title = safeText(slot.event.title);
+          var timeRange = formatTimeRange(slot.startMin, slot.endMin);
+          return "<div class=\"weekly-event-block weekly-color-" + slot.color + "\" style=\"top:" + top + "px;height:" + heightPx + "px\">" +
+            "<button type=\"button\" class=\"weekly-shift-btn weekly-shift-left\" data-id=\"" + safeText(slot.event.id) + "\" aria-label=\"Move event to previous day\">&#x2039;</button>" +
+            "<button type=\"button\" class=\"weekly-shift-btn weekly-shift-right\" data-id=\"" + safeText(slot.event.id) + "\" aria-label=\"Move event to next day\">&#x203A;</button>" +
+            "<div class=\"weekly-event-row\"><span class=\"weekly-event-time\">" + safeText(timeRange) + "</span>" +
+            "<button type=\"button\" class=\"weekly-event-remove-mini\" data-id=\"" + safeText(slot.event.id) + "\" aria-label=\"Remove event\">×</button></div>" +
+            "<div class=\"weekly-event-title\">" + title + "</div></div>";
+        }).join("");
+
+        return "<div class=\"weekly-day-track\">" + lines + blocks + "</div>";
+      }).join("");
+
+      gridEl.innerHTML =
+        "<div class=\"weekly-header-row\">" + dayHeader + "</div>" +
+        "<div class=\"weekly-all-day-row\">" + allDayRow + "</div>" +
+        "<div class=\"weekly-body-row\"><div class=\"weekly-time-col\">" + labels + "</div><div class=\"weekly-day-columns\">" + tracks + "</div></div>";
+
+      var removeButtons = gridEl.querySelectorAll(".weekly-event-remove-mini");
+      for (var i = 0; i < removeButtons.length; i++) {
+        removeButtons[i].addEventListener("click", function () {
+          var id = this.getAttribute("data-id");
+          var updated = getStoredWeeklyEvents().filter(function (ev) { return ev.id !== id; });
+          setStoredWeeklyEvents(updated);
+          render();
+        });
+      }
+
+      var shiftLeftButtons = gridEl.querySelectorAll(".weekly-shift-left");
+      for (var l = 0; l < shiftLeftButtons.length; l++) {
+        shiftLeftButtons[l].addEventListener("click", function () {
+          var id = this.getAttribute("data-id");
+          shiftEventDay(id, -1);
+        });
+      }
+
+      var shiftRightButtons = gridEl.querySelectorAll(".weekly-shift-right");
+      for (var r = 0; r < shiftRightButtons.length; r++) {
+        shiftRightButtons[r].addEventListener("click", function () {
+          var id = this.getAttribute("data-id");
+          shiftEventDay(id, 1);
+        });
+      }
+
+      var draggableBlocks = gridEl.querySelectorAll(".weekly-event-block");
+      for (var b = 0; b < draggableBlocks.length; b++) {
+        (function (blockEl) {
+          blockEl.addEventListener("pointerdown", function (e) {
+            if (!e.target) return;
+            if (e.target.closest(".weekly-event-remove-mini") || e.target.closest(".weekly-shift-btn")) return;
+            var id = blockEl.querySelector(".weekly-event-remove-mini") ? blockEl.querySelector(".weekly-event-remove-mini").getAttribute("data-id") : null;
+            if (!id) return;
+
+            var events = getStoredWeeklyEvents();
+            var ev = null;
+            for (var j = 0; j < events.length; j++) {
+              if (events[j] && events[j].id === id) {
+                ev = events[j];
+                break;
+              }
+            }
+            var range = getEventTimeRange(ev);
+            if (range == null) return;
+
+            var baseStart = range.start;
+            var baseEnd = range.end;
+            var durationMins = baseEnd - baseStart;
+            var dragStart = baseStart;
+            var dragEnd = baseEnd;
+            var startY = e.clientY;
+            var active = true;
+            blockEl.classList.add("dragging");
+            if (blockEl.setPointerCapture && e.pointerId != null) blockEl.setPointerCapture(e.pointerId);
+
+            function onMove(moveEvent) {
+              if (!active) return;
+              var deltaPx = moveEvent.clientY - startY;
+              var deltaMins = Math.round((deltaPx / hourHeight) * 60 / 15) * 15;
+              var nextStart = baseStart + deltaMins;
+              var minMinutes = startHour * 60;
+              if (nextStart < minMinutes) nextStart = minMinutes;
+              if (nextStart + durationMins > endOfDayExclusive) nextStart = endOfDayExclusive - durationMins;
+              if (nextStart < minMinutes) nextStart = minMinutes;
+              var nextEnd = nextStart + durationMins;
+              if (nextEnd > endOfDayExclusive) nextEnd = endOfDayExclusive;
+              dragStart = nextStart;
+              dragEnd = nextEnd;
+              var top = ((nextStart - startHour * 60) / 60) * hourHeight;
+              blockEl.style.top = top + "px";
+              var t = blockEl.querySelector(".weekly-event-time");
+              if (t) t.textContent = formatTimeRange(nextStart, Math.min(nextEnd, lastMinuteOfDay));
+            }
+
+            function onUp(upEvent) {
+              if (!active) return;
+              active = false;
+              blockEl.classList.remove("dragging");
+              window.removeEventListener("pointermove", onMove);
+              window.removeEventListener("pointerup", onUp);
+              var saveEnd = Math.min(dragEnd, lastMinuteOfDay);
+              if (saveEnd <= dragStart) saveEnd = Math.min(dragStart + 15, lastMinuteOfDay);
+              var updatedEvents = getStoredWeeklyEvents();
+              for (var k = 0; k < updatedEvents.length; k++) {
+                if (updatedEvents[k] && updatedEvents[k].id === id) {
+                  updatedEvents[k].startTime = minutesToTime(dragStart);
+                  updatedEvents[k].endTime = minutesToTime(saveEnd);
+                  delete updatedEvents[k].time;
+                  break;
+                }
+              }
+              setStoredWeeklyEvents(updatedEvents);
+              render();
+            }
+
+            window.addEventListener("pointermove", onMove);
+            window.addEventListener("pointerup", onUp);
+          });
+        })(draggableBlocks[b]);
+      }
+    }
+
+    addBtn.addEventListener("click", function () {
+      var day = dayEl.value;
+      var title = titleEl.value ? titleEl.value.trim() : "";
+      var startStr = startTimeEl ? startTimeEl.value.trim() : "";
+      var endStr = endTimeEl ? endTimeEl.value.trim() : "";
+      if (!title) return;
+
+      var events = getStoredWeeklyEvents();
+      var newEv = {
+        id: String(Date.now()) + "-" + Math.random().toString(36).slice(2, 7),
+        day: day,
+        title: title
+      };
+
+      if (startStr === "" && endStr === "") {
+        /* all-day: no start/end */
+      } else {
+        var sMin = startStr !== "" ? toMinutes(startStr) : null;
+        var eMin = endStr !== "" ? toMinutes(endStr) : null;
+        if (sMin == null && eMin != null) {
+          sMin = Math.max(0, eMin - 60);
+        }
+        if (sMin == null) return;
+        if (eMin == null) eMin = Math.min(sMin + 60, lastMinuteOfDay);
+        if (eMin <= sMin) eMin = Math.min(sMin + 15, lastMinuteOfDay);
+        if (eMin > lastMinuteOfDay) eMin = lastMinuteOfDay;
+        newEv.startTime = minutesToTime(sMin);
+        newEv.endTime = minutesToTime(eMin);
+      }
+
+      events.push(newEv);
+      setStoredWeeklyEvents(events);
+      titleEl.value = "";
+      startTimeEl.value = "";
+      endTimeEl.value = "";
+      titleEl.focus();
+      render();
+    });
+
+    render();
+  }
+
   function resetStorage() {
     try {
       localStorage.removeItem("nutriplanner_targets");
@@ -746,6 +1082,7 @@
     setYear();
     initTargetsPage();
     initDaylogPage();
+    initWeeklyPlannerPage();
     var resetBtn = document.getElementById("resetStorage");
     var overlay = document.getElementById("resetConfirmOverlay");
     var confirmOk = document.getElementById("resetConfirmOk");
