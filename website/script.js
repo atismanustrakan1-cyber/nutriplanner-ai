@@ -142,7 +142,7 @@
     var note = "";
     if (pctF >= 50 && pctC <= 25) {
       dietType = "Keto-style";
-      note = "—low carbs and high fat to support ketosis. Plan meals around fats, moderate protein, and minimal carbs.";
+      note = "—low carwbs and high fat to support ketosis. Plan meals around fats, moderate protein, and minimal carbs.";
     } else if (pctP >= 30) {
       dietType = "High protein";
       note = "—prioritize protein at each meal to support muscle and satiety while keeping carbs and fat moderate.";
