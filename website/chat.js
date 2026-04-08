@@ -30,6 +30,9 @@
   }
 
   function getApiBase() {
+    if (typeof window.NUTRIPLANNER_API_ORIGIN === "string" && window.NUTRIPLANNER_API_ORIGIN.trim() !== "") {
+      return window.NUTRIPLANNER_API_ORIGIN.trim().replace(/\/$/, "");
+    }
     return window.location.origin;
   }
 
@@ -150,7 +153,7 @@
     showError("");
     setLoading(true);
 
-    var apiErrorMsg = "Chat needs the backend server. Stop any simple file server, then run: cd backend && python3 -m uvicorn server:app --port 8000 — then open this site at http://localhost:8000";
+    var apiErrorMsg = "Chat needs the backend server. Stop any simple file server, then run: cd backend && npm install && npm start — then open this site at http://localhost:8000";
 
     var body = {
       messages: messages,
@@ -201,16 +204,26 @@
     }
   }
 
-  updateDayLogStatus();
-  setInterval(updateDayLogStatus, 2000);
-
-  if (sendBtn) sendBtn.addEventListener("click", sendMessage);
-  if (inputEl) {
-    inputEl.addEventListener("keydown", function (e) {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
-    });
+  function startChatUi() {
+    updateDayLogStatus();
+    setInterval(updateDayLogStatus, 2000);
+    if (sendBtn) sendBtn.addEventListener("click", sendMessage);
+    if (inputEl) {
+      inputEl.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+    }
   }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var p = window.nutriplannerDataReady;
+    if (p && typeof p.then === "function") {
+      p.then(startChatUi, startChatUi);
+    } else {
+      startChatUi();
+    }
+  });
 })();

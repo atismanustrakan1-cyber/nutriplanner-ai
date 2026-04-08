@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sign in — NutriPlanner AI</title>
+  <meta name="description" content="Sign in with Google, email link, or email and password." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <button type="button" class="sidebar-menu-btn" id="sidebarMenuBtn" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false">
+    <span class="sidebar-menu-icon" aria-hidden="true"></span>
+  </button>
+  <div class="sidebar-backdrop" id="sidebarBackdrop" hidden aria-hidden="true"></div>
+  <div class="top-auth-bar" aria-label="Account">
+    <a href="login.html" id="navAuthLink" class="btn ghost small top-auth-login">Log in</a>
+    <span id="navAuthUser" class="nav-auth-user top-auth-user" hidden></span>
+  </div>
+  <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+    <div class="sidebar-inner">
+      <a href="index.html" class="sidebar-brand">
+        <img src="logo.png" alt="" class="logo" width="44" height="44" />
+        <div class="sidebar-brand-text">
+          <div class="title">NutriPlanner AI</div>
+          <div class="subtitle">Sign in</div>
+        </div>
+      </a>
+      <nav class="nav sidebar-nav" id="nav">
+        <a href="index.html">Home</a>
+        <a href="targets.html">Set Targets</a>
+        <a href="daylog.html">Day Log</a>
+        <a href="weekly-planner.html">Weekly Planner</a>
+        <span id="userGreeting" class="user-greeting"></span>
+        <a href="settings.html">Settings</a>
+        <a class="btn" href="https://github.com/atismanustrakan1-cyber/nutriplanner-ai" target="_blank" rel="noreferrer">GitHub</a>
+        <button type="button" id="navAuthSignOut" class="btn ghost small sidebar-sign-out" hidden>Sign out</button>
+      </nav>
+    </div>
+  </aside>
+
+  <div class="app-content">
+  <main class="page-main">
+    <div class="container">
+      <header class="page-header">
+        <h1>Sign in</h1>
+        <p class="lead muted">Google, magic link, or email and password. Passwords are handled by Supabase — we never store them on our server.</p>
+      </header>
+
+      <div id="authConfigWarn" class="panel auth-config-warn" hidden>
+        <p><strong>Configure Supabase</strong></p>
+        <p class="muted">Open <code>website/auth-config.js</code> and paste your <strong>anon public</strong> key from the Supabase dashboard (Project Settings → API). Add this page’s URL under Authentication → URL Configuration → Redirect URLs.</p>
+      </div>
+
+      <div id="authSignedIn" class="panel auth-panel" hidden>
+        <p class="auth-panel-title">You’re signed in</p>
+        <p class="muted" id="authUserEmail"></p>
+        <div class="auth-panel-actions">
+          <a class="btn primary" href="index.html">Continue to app</a>
+          <button type="button" class="btn" id="signOutMain">Sign out</button>
+        </div>
+      </div>
+
+      <div id="authSignedOut" class="auth-stack" hidden>
+        <div class="panel auth-panel">
+          <p class="auth-panel-title">Continue with Google</p>
+          <p class="muted auth-panel-desc">Uses your Google account via Supabase Auth.</p>
+          <button type="button" class="btn auth-google-btn" id="googleSignIn">
+            <span class="auth-google-icon" aria-hidden="true"></span>
+            Sign in with Google
+          </button>
+        </div>
+
+        <div class="panel auth-panel">
+          <p class="auth-panel-title">Email &amp; password</p>
+          <p class="muted auth-panel-desc">Enable <strong>Email</strong> in Supabase and turn on password sign-in under that provider.</p>
+          <form id="passwordSignInForm" class="auth-email-form">
+            <label class="auth-email-label">
+              <span>Email</span>
+              <input type="email" id="passwordEmail" name="email" required autocomplete="email" placeholder="you@example.com" />
+            </label>
+            <label class="auth-email-label">
+              <span>Password</span>
+              <input type="password" id="passwordSignIn" name="password" required autocomplete="current-password" minlength="6" placeholder="••••••••" />
+            </label>
+            <div class="auth-password-actions">
+              <button type="submit" class="btn primary">Sign in</button>
+              <button type="button" class="btn" id="passwordSignUpBtn">Create account</button>
+            </div>
+          </form>
+          <form id="passwordSignUpForm" class="auth-email-form" hidden>
+            <label class="auth-email-label">
+              <span>Email</span>
+              <input type="email" id="signUpEmail" name="email" required autocomplete="email" placeholder="you@example.com" />
+            </label>
+            <label class="auth-email-label">
+              <span>Password</span>
+              <input type="password" id="signUpPassword" name="password" required autocomplete="new-password" minlength="6" placeholder="At least 6 characters" />
+            </label>
+            <label class="auth-email-label">
+              <span>Confirm password</span>
+              <input type="password" id="signUpPasswordConfirm" name="password2" required autocomplete="new-password" minlength="6" placeholder="Repeat password" />
+            </label>
+            <div class="auth-password-actions">
+              <button type="submit" class="btn primary">Sign up</button>
+              <button type="button" class="btn ghost" id="passwordBackToSignIn">Back to sign in</button>
+            </div>
+          </form>
+          <p class="auth-forgot-wrap">
+            <button type="button" class="btn link-like" id="passwordForgotBtn">Forgot password?</button>
+          </p>
+        </div>
+
+        <div class="panel auth-panel">
+          <p class="auth-panel-title">Or magic link (email only)</p>
+          <p class="muted auth-panel-desc">We’ll email a one-time sign-in link (needs working email / SMTP in Supabase).</p>
+          <form id="emailMagicForm" class="auth-email-form">
+            <label class="auth-email-label">
+              <span>Email</span>
+              <input type="email" id="emailMagicInput" name="email" required autocomplete="email" placeholder="you@example.com" />
+            </label>
+            <button type="submit" class="btn">Send sign-in link</button>
+          </form>
+          <p id="authMessage" class="auth-message muted" aria-live="polite"></p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-row">
+      <span>© <span id="year"></span> NutriPlanner AI</span>
+      <span class="muted">Supabase Auth • Google, password &amp; magic link</span>
+    </div>
+  </footer>
+  </div>
+
+  <script src="auth-config.js"></script>
+  <script type="module" src="auth.js"></script>
+  <script src="nav.js"></script>
+  <script src="script.js"></script>
+  <script src="settings.js"></script>
+</body>
+</html>

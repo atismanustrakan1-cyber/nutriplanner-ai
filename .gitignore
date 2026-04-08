@@ -8,6 +8,9 @@ c_core/build/
 CMakeCache.txt
 CMakeFiles/
 
+# Node
+node_modules/
+
 # Env and secrets (never commit API keys)
 .env
 .env.local
@@ -15,3 +18,4 @@ CMakeFiles/
 # Python
 __pycache__/
 *.pyc
+.vercel

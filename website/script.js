@@ -30,6 +30,7 @@
     try {
       localStorage.setItem(STORAGE_TARGETS, JSON.stringify({ targetCalories: cal, targetMacros: macros }));
     } catch (e) {}
+    if (typeof window.scheduleNutriplannerCloudSave === "function") window.scheduleNutriplannerCloudSave();
   }
 
   function getStoredMeals() {
@@ -44,6 +45,7 @@
     try {
       localStorage.setItem(STORAGE_MEALS, JSON.stringify(meals));
     } catch (e) {}
+    if (typeof window.scheduleNutriplannerCloudSave === "function") window.scheduleNutriplannerCloudSave();
   }
 
   function getStoredWeeklyEvents() {
@@ -60,6 +62,7 @@
     try {
       localStorage.setItem(STORAGE_WEEKLY_EVENTS, JSON.stringify(events));
     } catch (e) {}
+    if (typeof window.scheduleNutriplannerCloudSave === "function") window.scheduleNutriplannerCloudSave();
   }
 
   // ----- Targets page -----
@@ -551,10 +554,13 @@
     var foodSearchBtn = document.getElementById("foodSearchBtn");
     var foodSearchResults = document.getElementById("foodSearchResults");
     var foodSearchAutocomplete = document.getElementById("foodSearchAutocomplete");
-    var apiBase = window.location.origin;
+    var apiBase =
+      typeof window.NUTRIPLANNER_API_ORIGIN === "string" && window.NUTRIPLANNER_API_ORIGIN.trim() !== ""
+        ? window.NUTRIPLANNER_API_ORIGIN.trim().replace(/\/$/, "")
+        : window.location.origin;
     function searchFailMessage(err, is404) {
       if (is404 || (err && (err.message === "Not Found" || err.message.indexOf("404") !== -1)))
-        return "Search unavailable. Run the app from the backend server: in terminal run \u201ccd backend && python -m uvicorn server:app --port 8000\u201d then open http://localhost:8000";
+        return "Search unavailable. Run the app from the backend server: in terminal run \u201ccd backend && npm install && npm start\u201d then open http://localhost:8000";
       return "Search failed: " + (err && err.message ? err.message : "Check FOOD_API_KEY in backend/.env");
     }
     if (foodSearchBtn && foodSearchResults) {
@@ -677,32 +683,122 @@
     var scanFoodCapture = document.getElementById("scanFoodCapture");
     var scanFoodCancel = document.getElementById("scanFoodCancel");
     var scanFoodStatus = document.getElementById("scanFoodStatus");
-    if (scanFoodBtn && scanFoodOverlay && scanFoodVideo && scanFoodCanvas && scanFoodCapture && scanFoodCancel) {
+    var scanFoodStageCamera = document.getElementById("scanFoodStageCamera");
+    var scanFoodStageLoading = document.getElementById("scanFoodStageLoading");
+    var scanFoodStageConfirm = document.getElementById("scanFoodStageConfirm");
+    var scanFoodConfirmImg = document.getElementById("scanFoodConfirmImg");
+    var scanFoodConfirmDetails = document.getElementById("scanFoodConfirmDetails");
+    var scanFoodConfirmApply = document.getElementById("scanFoodConfirmApply");
+    var scanFoodConfirmRetry = document.getElementById("scanFoodConfirmRetry");
+    var scanFoodConfirmDismiss = document.getElementById("scanFoodConfirmDismiss");
+    var scanFoodTitle = document.getElementById("scanFoodTitle");
+    if (
+      scanFoodBtn &&
+      scanFoodOverlay &&
+      scanFoodVideo &&
+      scanFoodCanvas &&
+      scanFoodCapture &&
+      scanFoodCancel &&
+      scanFoodStageCamera &&
+      scanFoodStageLoading &&
+      scanFoodStageConfirm &&
+      scanFoodConfirmImg &&
+      scanFoodConfirmDetails &&
+      scanFoodConfirmApply &&
+      scanFoodConfirmRetry &&
+      scanFoodConfirmDismiss
+    ) {
       var scanStream = null;
+      var pendingScanSnapshot = null;
+      var pendingScanData = null;
+
       function stopScanStream() {
         if (scanStream && scanStream.getTracks) {
-          scanStream.getTracks().forEach(function (t) { t.stop(); });
+          scanStream.getTracks().forEach(function (t) {
+            t.stop();
+          });
           scanStream = null;
         }
         if (scanFoodVideo) scanFoodVideo.srcObject = null;
       }
+
+      function setScanStage(stage) {
+        if (scanFoodStageCamera) scanFoodStageCamera.hidden = stage !== "camera";
+        if (scanFoodStageLoading) scanFoodStageLoading.hidden = stage !== "loading";
+        if (scanFoodStageConfirm) scanFoodStageConfirm.hidden = stage !== "confirm";
+      }
+
       function closeScanModal() {
         stopScanStream();
+        pendingScanSnapshot = null;
+        pendingScanData = null;
         scanFoodOverlay.setAttribute("hidden", "");
         if (scanFoodStatus) scanFoodStatus.textContent = "";
+        setScanStage("camera");
+        if (scanFoodTitle) scanFoodTitle.textContent = "Scan food";
+        scanFoodConfirmImg.removeAttribute("src");
+        scanFoodConfirmImg.alt = "";
+        scanFoodConfirmDetails.innerHTML = "";
       }
+
+      function startScanCamera() {
+        return navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(function (stream) {
+          scanStream = stream;
+          scanFoodVideo.srcObject = stream;
+        });
+      }
+
+      function resumeCameraAfterError() {
+        setScanStage("camera");
+        if (scanFoodTitle) scanFoodTitle.textContent = "Scan food";
+        startScanCamera().catch(function () {
+          if (scanFoodStatus) scanFoodStatus.textContent = "Camera access denied or unavailable.";
+        });
+      }
+
       scanFoodBtn.addEventListener("click", function () {
         if (scanFoodStatus) scanFoodStatus.textContent = "";
         scanFoodOverlay.removeAttribute("hidden");
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(function (stream) {
-          scanStream = stream;
-          scanFoodVideo.srcObject = stream;
-        }).catch(function (err) {
+        setScanStage("camera");
+        if (scanFoodTitle) scanFoodTitle.textContent = "Scan food";
+        startScanCamera().catch(function () {
           if (scanFoodStatus) scanFoodStatus.textContent = "Camera access denied or unavailable.";
         });
       });
+
       scanFoodCancel.addEventListener("click", closeScanModal);
-      scanFoodOverlay.addEventListener("click", function (e) { if (e.target === scanFoodOverlay) closeScanModal(); });
+      scanFoodOverlay.addEventListener("click", function (e) {
+        if (e.target === scanFoodOverlay) closeScanModal();
+      });
+      scanFoodConfirmDismiss.addEventListener("click", closeScanModal);
+
+      scanFoodConfirmRetry.addEventListener("click", function () {
+        pendingScanSnapshot = null;
+        pendingScanData = null;
+        scanFoodConfirmImg.removeAttribute("src");
+        scanFoodConfirmImg.alt = "";
+        scanFoodConfirmDetails.innerHTML = "";
+        if (scanFoodStatus) scanFoodStatus.textContent = "";
+        resumeCameraAfterError();
+      });
+
+      scanFoodConfirmApply.addEventListener("click", function () {
+        if (!pendingScanData) return;
+        var d = pendingScanData;
+        var nameEl = document.getElementById("mealName");
+        var calEl = document.getElementById("mealCal");
+        var pEl = document.getElementById("mealP");
+        var cEl = document.getElementById("mealC");
+        var fEl = document.getElementById("mealF");
+        if (nameEl) nameEl.value = d.name || "";
+        if (calEl) calEl.value = String(d.calories != null ? d.calories : 0);
+        if (pEl) pEl.value = String(d.protein != null ? d.protein : 0);
+        if (cEl) cEl.value = String(d.carbs != null ? d.carbs : 0);
+        if (fEl) fEl.value = String(d.fat != null ? d.fat : 0);
+        closeScanModal();
+        if (nameEl) nameEl.focus();
+      });
+
       scanFoodCapture.addEventListener("click", function () {
         if (!scanFoodVideo.srcObject || scanFoodVideo.readyState < 2) return;
         var w = scanFoodVideo.videoWidth;
@@ -714,36 +810,96 @@
         ctx.drawImage(scanFoodVideo, 0, 0);
         var dataUrl = scanFoodCanvas.toDataURL("image/jpeg", 0.85);
         var base64 = dataUrl.indexOf(",") >= 0 ? dataUrl.split(",")[1] : dataUrl;
-        closeScanModal();
-        if (scanFoodStatus) scanFoodStatus.textContent = "Analyzing…";
-        scanFoodOverlay.removeAttribute("hidden");
+        pendingScanSnapshot = dataUrl;
+        stopScanStream();
+        if (scanFoodStatus) scanFoodStatus.textContent = "";
+        setScanStage("loading");
+        if (scanFoodTitle) scanFoodTitle.textContent = "Analyzing photo…";
         fetch(apiBase + "/api/scan-food", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ image_base64: base64 }),
         })
           .then(function (res) {
-            if (!res.ok) return res.json().then(function (d) { throw new Error(d.detail || res.statusText); });
-            return res.json();
+            return res.text().then(function (text) {
+              var trimmed = (text || "").trim();
+              var data = null;
+              if (trimmed) {
+                try {
+                  data = JSON.parse(trimmed);
+                } catch (_parseErr) {
+                  if (!res.ok) {
+                    throw new Error(
+                      trimmed.length > 220 ? trimmed.slice(0, 220) + "…" : trimmed || res.statusText || "Scan request failed",
+                    );
+                  }
+                  throw new Error("Server returned invalid JSON.");
+                }
+              }
+              if (!res.ok) {
+                var errMsg =
+                  (data && (data.detail || data.message || data.error)) ||
+                  (trimmed && !data ? trimmed.slice(0, 200) : "") ||
+                  res.statusText ||
+                  "Scan request failed (" + res.status + ")";
+                throw new Error(errMsg);
+              }
+              if (data == null) {
+                throw new Error("Empty response from server. Is the API running and OPENROUTER_API_KEY set?");
+              }
+              return data;
+            });
           })
           .then(function (data) {
-            closeScanModal();
-            var nameEl = document.getElementById("mealName");
-            var calEl = document.getElementById("mealCal");
-            var pEl = document.getElementById("mealP");
-            var cEl = document.getElementById("mealC");
-            var fEl = document.getElementById("mealF");
-            if (nameEl) nameEl.value = data.name || "";
-            if (calEl) calEl.value = String(data.calories != null ? data.calories : 0);
-            if (pEl) pEl.value = String(data.protein != null ? data.protein : 0);
-            if (cEl) cEl.value = String(data.carbs != null ? data.carbs : 0);
-            if (fEl) fEl.value = String(data.fat != null ? data.fat : 0);
-            if (nameEl) nameEl.focus();
+            var isReal = data.is_real_food !== false;
+            if (!isReal) {
+              pendingScanSnapshot = null;
+              if (scanFoodStatus) {
+                scanFoodStatus.textContent =
+                  data.rejection_reason ||
+                  "This photo does not look like food you can log. Try a clear picture of your meal.";
+              }
+              resumeCameraAfterError();
+              return;
+            }
+            pendingScanData = data;
+            if (scanFoodTitle) scanFoodTitle.textContent = "Confirm food";
+            scanFoodConfirmImg.src = dataUrl;
+            scanFoodConfirmImg.alt = "Photo you captured for meal scan";
+            var esc = function (s) {
+              return String(s != null ? s : "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;");
+            };
+            scanFoodConfirmDetails.innerHTML =
+              "<dl class=\"scan-food-confirm-dl\">" +
+              "<dt>Name</dt><dd>" +
+              esc(data.name) +
+              "</dd>" +
+              "<dt>Calories</dt><dd>" +
+              esc(String(data.calories != null ? data.calories : 0)) +
+              " kcal</dd>" +
+              "<dt>Protein</dt><dd>" +
+              esc(String(data.protein != null ? data.protein : 0)) +
+              " g</dd>" +
+              "<dt>Carbs</dt><dd>" +
+              esc(String(data.carbs != null ? data.carbs : 0)) +
+              " g</dd>" +
+              "<dt>Fat</dt><dd>" +
+              esc(String(data.fat != null ? data.fat : 0)) +
+              " g</dd>" +
+              "</dl>";
+            setScanStage("confirm");
+            scanFoodConfirmApply.focus();
           })
           .catch(function (err) {
-            closeScanModal();
-            if (scanFoodStatus) scanFoodStatus.textContent = "Scan failed: " + (err && err.message ? err.message : "Try again.");
-            scanFoodOverlay.removeAttribute("hidden");
+            pendingScanSnapshot = null;
+            if (scanFoodStatus) {
+              scanFoodStatus.textContent = "Scan failed: " + (err && err.message ? err.message : "Try again.");
+            }
+            resumeCameraAfterError();
           });
       });
     }
@@ -1074,24 +1230,33 @@
     try {
       localStorage.removeItem("nutriplanner_targets");
       localStorage.removeItem("nutriplanner_meals");
+      if (typeof window.scheduleNutriplannerCloudSave === "function") window.scheduleNutriplannerCloudSave();
       if (typeof location !== "undefined" && location.reload) location.reload();
     } catch (e) {}
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    setYear();
-    initTargetsPage();
-    initDaylogPage();
-    initWeeklyPlannerPage();
-    var resetBtn = document.getElementById("resetStorage");
-    var overlay = document.getElementById("resetConfirmOverlay");
-    var confirmOk = document.getElementById("resetConfirmOk");
-    var confirmCancel = document.getElementById("resetConfirmCancel");
-    if (resetBtn && overlay) {
-      resetBtn.addEventListener("click", function () { overlay.removeAttribute("hidden"); });
-      if (confirmCancel) confirmCancel.addEventListener("click", function () { overlay.setAttribute("hidden", ""); });
-      if (confirmOk) confirmOk.addEventListener("click", function () { overlay.setAttribute("hidden", ""); resetStorage(); });
-      overlay.addEventListener("click", function (e) { if (e.target === overlay) overlay.setAttribute("hidden", ""); });
+    function startMain() {
+      setYear();
+      initTargetsPage();
+      initDaylogPage();
+      initWeeklyPlannerPage();
+      var resetBtn = document.getElementById("resetStorage");
+      var overlay = document.getElementById("resetConfirmOverlay");
+      var confirmOk = document.getElementById("resetConfirmOk");
+      var confirmCancel = document.getElementById("resetConfirmCancel");
+      if (resetBtn && overlay) {
+        resetBtn.addEventListener("click", function () { overlay.removeAttribute("hidden"); });
+        if (confirmCancel) confirmCancel.addEventListener("click", function () { overlay.setAttribute("hidden", ""); });
+        if (confirmOk) confirmOk.addEventListener("click", function () { overlay.setAttribute("hidden", ""); resetStorage(); });
+        overlay.addEventListener("click", function (e) { if (e.target === overlay) overlay.setAttribute("hidden", ""); });
+      }
+    }
+    var p = window.nutriplannerDataReady;
+    if (p && typeof p.then === "function") {
+      p.then(startMain, startMain);
+    } else {
+      startMain();
     }
   });
 })();

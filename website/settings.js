@@ -22,6 +22,7 @@
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
     } catch (e) {}
+    if (typeof window.scheduleNutriplannerCloudSave === "function") window.scheduleNutriplannerCloudSave();
   }
 
   function applySettings() {
@@ -35,7 +36,7 @@
     if (greeting) {
       if (name) {
         greeting.textContent = "Hi, " + name;
-        greeting.style.display = "";
+        greeting.style.display = "block";
       } else {
         greeting.textContent = "";
         greeting.style.display = "none";
@@ -113,6 +114,7 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
+    function runSettingsPage() {
     applySettings();
 
     var nameEl = document.getElementById("settingsName");
@@ -186,6 +188,13 @@
           setTimeout(function () { savedEl.textContent = ""; }, 2500);
         }
       });
+    }
+    }
+    var p = window.nutriplannerDataReady;
+    if (p && typeof p.then === "function") {
+      p.then(runSettingsPage, runSettingsPage);
+    } else {
+      runSettingsPage();
     }
   });
 })();

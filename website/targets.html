@@ -8,16 +8,24 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header class="topbar">
-    <div class="container">
-      <div class="brand">
-        <img src="logo.png" alt="NutriPlanner AI" class="logo" />
-        <div>
+  <button type="button" class="sidebar-menu-btn" id="sidebarMenuBtn" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false">
+    <span class="sidebar-menu-icon" aria-hidden="true"></span>
+  </button>
+  <div class="sidebar-backdrop" id="sidebarBackdrop" hidden aria-hidden="true"></div>
+  <div class="top-auth-bar" aria-label="Account">
+    <a href="login.html" id="navAuthLink" class="btn ghost small top-auth-login">Log in</a>
+    <span id="navAuthUser" class="nav-auth-user top-auth-user" hidden></span>
+  </div>
+  <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+    <div class="sidebar-inner">
+      <a href="index.html" class="sidebar-brand">
+        <img src="logo.png" alt="" class="logo" width="44" height="44" />
+        <div class="sidebar-brand-text">
           <div class="title">NutriPlanner AI</div>
           <div class="subtitle">Hack@UCF</div>
         </div>
-      </div>
-      <nav class="nav" id="nav">
+      </a>
+      <nav class="nav sidebar-nav" id="nav">
         <a href="index.html">Home</a>
         <a href="targets.html">Set Targets</a>
         <a href="daylog.html">Day Log</a>
@@ -25,10 +33,12 @@
         <span id="userGreeting" class="user-greeting"></span>
         <a href="settings.html">Settings</a>
         <a class="btn" href="https://github.com/atismanustrakan1-cyber/nutriplanner-ai" target="_blank" rel="noreferrer">GitHub</a>
+        <button type="button" id="navAuthSignOut" class="btn ghost small sidebar-sign-out" hidden>Sign out</button>
       </nav>
     </div>
-  </header>
+  </aside>
 
+  <div class="app-content">
   <main class="page-main">
     <div class="container">
       <header class="page-header">
@@ -138,8 +148,11 @@
   </footer>
 
   <div id="calOverrideToast" class="toast" aria-live="polite"></div>
+  </div>
 
   <script src="nutriplanner.js"></script>
+  <script src="auth-config.js"></script>
+  <script type="module" src="auth.js"></script>
   <script src="nav.js"></script>
   <script src="script.js"></script>
   <script src="settings.js"></script>

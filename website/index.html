@@ -8,16 +8,24 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header class="topbar">
-    <div class="container">
-      <div class="brand">
-        <img src="logo.png" alt="NutriPlanner AI" class="logo" />
-        <div>
+  <button type="button" class="sidebar-menu-btn" id="sidebarMenuBtn" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false">
+    <span class="sidebar-menu-icon" aria-hidden="true"></span>
+  </button>
+  <div class="sidebar-backdrop" id="sidebarBackdrop" hidden aria-hidden="true"></div>
+  <div class="top-auth-bar" aria-label="Account">
+    <a href="login.html" id="navAuthLink" class="btn ghost small top-auth-login">Log in</a>
+    <span id="navAuthUser" class="nav-auth-user top-auth-user" hidden></span>
+  </div>
+  <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+    <div class="sidebar-inner">
+      <a href="index.html" class="sidebar-brand">
+        <img src="logo.png" alt="" class="logo" width="44" height="44" />
+        <div class="sidebar-brand-text">
           <div class="title">NutriPlanner AI</div>
           <div class="subtitle">Hack@UCF • intake • meal schedules • stock • diet • budget</div>
         </div>
-      </div>
-      <nav class="nav" id="nav">
+      </a>
+      <nav class="nav sidebar-nav" id="nav">
         <a href="index.html">Home</a>
         <a href="targets.html">Set Targets</a>
         <a href="daylog.html">Day Log</a>
@@ -25,53 +33,25 @@
         <span id="userGreeting" class="user-greeting"></span>
         <a href="settings.html">Settings</a>
         <a class="btn" href="https://github.com/atismanustrakan1-cyber/nutriplanner-ai" target="_blank" rel="noreferrer">GitHub</a>
+        <button type="button" id="navAuthSignOut" class="btn ghost small sidebar-sign-out" hidden>Sign out</button>
       </nav>
     </div>
-  </header>
+  </aside>
 
+  <div class="app-content">
   <main>
     <div class="container hero-greeting-wrap">
       <p id="heroGreeting" class="hero-greeting"></p>
     </div>
-    <section class="page-main">
-      <div class="container">
-        <header class="page-header">
-          <h2>Overview</h2>
-          <p class="lead muted">An all-in-one nutrition management app built around your goals and constraints.</p>
-        </header>
-        <div class="panel overview-goals-panel">
-          <h3>What NutriPlanner AI does</h3>
-          <p>This project is an all-in-one nutrition app that supports:</p>
-          <ul class="overview-goals-list">
-            <li><strong>Daily calorie intake</strong> — Track what you eat and see totals vs your targets.</li>
-            <li><strong>Personalized meal schedules</strong> — Get AI-suggested meal plans based on your targets, what you have on hand, and your preferences.</li>
-            <li><strong>Stock availability</strong> — Note what ingredients you have so the AI can suggest meals that use them.</li>
-            <li><strong>Dietary restrictions</strong> — Set allergies, intolerances, or diets (e.g. vegetarian, low-sodium) so suggestions stay within your limits.</li>
-            <li><strong>Financial limits</strong> — Set a weekly food budget so suggestions respect what you can spend.</li>
-          </ul>
-        </div>
-        <div class="grid-3">
-          <div class="panel">
-            <h3>Set targets</h3>
-            <p>Enter your weight and goal (loss, maintain, gain) to get a daily calorie target and macro split. Log meals and watch your day stack up with clear numbers and AI feedback.</p>
-          </div>
-          <div class="panel">
-            <h3>Log & plan</h3>
-            <p>Add meals manually, search foods, or scan with your camera. In Settings, add dietary restrictions, a weekly budget, and what’s in your pantry—then ask the AI for meal suggestions that fit.</p>
-          </div>
-          <div class="panel">
-            <h3>Who it’s for</h3>
-            <p>Anyone who wants to manage nutrition in one place: track intake, stay within budget and diet rules, and use what they have. This is a planning and tracking tool, not medical or dietary advice.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <section class="hero">
       <div class="container">
         <h1>Daily intake, meal schedules, stock, diet, and budget—in one app.</h1>
         <p class="lead">
           Track calories, set dietary restrictions and a food budget, note what you have on hand, and get AI meal suggestions.
+        </p>
+        <p class="hero-signin-row">
+          <a href="login.html" class="btn primary">Sign in</a>
+          <span class="muted hero-signin-hint">Google or email link — saves your session in this browser.</span>
         </p>
         <div class="link-cards" style="margin-top: 32px;">
           <a href="targets.html" class="link-card">
@@ -86,6 +66,10 @@
             <h3>Settings</h3>
             <p>Your name, dietary restrictions, weekly budget, and what’s in your pantry.</p>
           </a>
+          <a href="login.html" class="link-card">
+            <h3>Sign in</h3>
+            <p>Log in with Google or a one-time email link (Supabase Auth).</p>
+          </a>
         </div>
       </div>
     </section>
@@ -97,7 +81,10 @@
       <span class="muted">C-first MVP • team project</span>
     </div>
   </footer>
+  </div>
 
+  <script src="auth-config.js"></script>
+  <script type="module" src="auth.js"></script>
   <script src="nav.js"></script>
   <script src="script.js"></script>
   <script src="settings.js"></script>
