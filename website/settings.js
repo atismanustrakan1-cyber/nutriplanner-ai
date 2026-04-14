@@ -4,11 +4,29 @@
     name: "",
     theme: "dark",
     accent: "default",
+    density: "comfortable",
+    fontSize: "md",
     dietaryRestrictions: "",
     weeklyBudget: "",
     weeklySpent: "",
-    stockNotes: ""
+    stockNotes: "",
+    shoppingLocation: ""
   };
+
+  function radiusForDensity(density) {
+    return density === "compact" ? "sharp" : "round";
+  }
+
+  function normalizeFontSize(fs) {
+    return fs === "lg" ? "lg" : "md";
+  }
+
+  /** First letter uppercased for “Hi, {name}” (rest of string unchanged). */
+  function greetingDisplayName(raw) {
+    var n = (raw || "").trim();
+    if (!n) return "";
+    return n.charAt(0).toUpperCase() + n.slice(1);
+  }
 
   function getSettings() {
     try {
@@ -29,13 +47,20 @@
     var s = getSettings();
     var root = document.documentElement;
     root.setAttribute("data-theme", s.theme || "dark");
-    root.setAttribute("data-accent", s.accent || "default");
+    var acc = s.accent || "default";
+    if (acc !== "warm" && acc !== "green" && acc !== "blue" && acc !== "violet") acc = "default";
+    root.setAttribute("data-accent", acc);
+    var density = s.density === "compact" ? "compact" : "comfortable";
+    root.setAttribute("data-density", density);
+    root.setAttribute("data-radius", radiusForDensity(density));
+    root.setAttribute("data-font-size", normalizeFontSize(s.fontSize));
 
     var name = (s.name || "").trim();
+    var greetName = greetingDisplayName(name);
     var greeting = document.getElementById("userGreeting");
     if (greeting) {
       if (name) {
-        greeting.textContent = "Hi, " + name;
+        greeting.textContent = "Hi, " + greetName;
         greeting.style.display = "block";
       } else {
         greeting.textContent = "";
@@ -45,7 +70,7 @@
     var heroGreeting = document.getElementById("heroGreeting");
     if (heroGreeting) {
       if (name) {
-        heroGreeting.textContent = "Hi, " + name;
+        heroGreeting.textContent = "Hi, " + greetName;
         heroGreeting.style.display = "block";
       } else {
         heroGreeting.textContent = "";
@@ -64,10 +89,17 @@
     var budgetEl = document.getElementById("settingsBudget");
     var spentEl = document.getElementById("settingsSpent");
     var stockEl = document.getElementById("settingsStock");
+    var locationEl = document.getElementById("settingsShoppingLocation");
     var theme = "dark";
     var accent = "default";
+    var density = "comfortable";
+    var fontSize = "md";
     document.querySelectorAll("input[name=\"theme\"]").forEach(function (r) { if (r.checked) theme = r.value; });
-    document.querySelectorAll("input[name=\"accent\"]").forEach(function (r) { if (r.checked) accent = r.value; });
+    document.querySelectorAll("input[name=\"density\"]").forEach(function (r) { if (r.checked) density = r.value; });
+    var accentEl = document.getElementById("settingsAccent");
+    if (accentEl && accentEl.value) accent = accentEl.value;
+    var largeEl = document.getElementById("settingsLargeText");
+    fontSize = largeEl && largeEl.checked ? "lg" : "md";
     var budgetVal = budgetEl && budgetEl.value.trim() !== "" ? budgetEl.value.trim() : "";
     var spentVal = spentEl && spentEl.value.trim() !== "" ? spentEl.value.trim() : "";
     return {
@@ -76,15 +108,24 @@
       weeklyBudget: budgetVal,
       weeklySpent: spentVal,
       stockNotes: stockEl ? stockEl.value.trim() : "",
+      shoppingLocation: locationEl ? locationEl.value.trim() : "",
       theme: theme,
-      accent: accent
+      accent: accent,
+      density: density,
+      fontSize: fontSize
     };
   }
 
   function applyFromForm() {
     var v = getFormValues();
     document.documentElement.setAttribute("data-theme", v.theme);
-    document.documentElement.setAttribute("data-accent", v.accent);
+    var acc = v.accent;
+    if (acc !== "warm" && acc !== "green" && acc !== "blue" && acc !== "violet") acc = "default";
+    document.documentElement.setAttribute("data-accent", acc);
+    var dens = v.density === "compact" ? "compact" : "comfortable";
+    document.documentElement.setAttribute("data-density", dens);
+    document.documentElement.setAttribute("data-radius", radiusForDensity(dens));
+    document.documentElement.setAttribute("data-font-size", normalizeFontSize(v.fontSize));
     updateBudgetSummary(v.weeklyBudget, v.weeklySpent);
   }
 
@@ -114,6 +155,8 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
+    applySettings();
+
     function runSettingsPage() {
     applySettings();
 
@@ -131,34 +174,36 @@
     if (budgetEl) budgetEl.value = s.weeklyBudget != null && s.weeklyBudget !== "" ? String(s.weeklyBudget) : "";
     if (spentEl) spentEl.value = s.weeklySpent != null && s.weeklySpent !== "" ? String(s.weeklySpent) : "";
     if (stockEl) stockEl.value = s.stockNotes || "";
+    var locationField = document.getElementById("settingsShoppingLocation");
+    if (locationField) locationField.value = s.shoppingLocation || "";
     var themeRadios = document.querySelectorAll("input[name=\"theme\"]");
-    var accentRadios = document.querySelectorAll("input[name=\"accent\"]");
+    var densityRadios = document.querySelectorAll("input[name=\"density\"]");
     themeRadios.forEach(function (r) { r.checked = r.value === (s.theme || "dark"); });
-    accentRadios.forEach(function (r) { r.checked = r.value === (s.accent || "default"); });
+    var savedAcc = s.accent || "default";
+    if (savedAcc !== "warm" && savedAcc !== "green" && savedAcc !== "blue" && savedAcc !== "violet") savedAcc = "default";
+    var accentSelect = document.getElementById("settingsAccent");
+    if (accentSelect) accentSelect.value = savedAcc;
+    densityRadios.forEach(function (r) { r.checked = r.value === (s.density || "comfortable"); });
+    var largeCheck = document.getElementById("settingsLargeText");
+    if (largeCheck) largeCheck.checked = normalizeFontSize(s.fontSize) === "lg";
 
     updateBudgetSummary(s.weeklyBudget != null ? String(s.weeklyBudget) : "", s.weeklySpent != null ? String(s.weeklySpent) : "");
 
-    themeRadios.forEach(function (r) {
-      r.addEventListener("change", function () { applyFromForm(); });
-    });
-    accentRadios.forEach(function (r) {
-      r.addEventListener("change", function () { applyFromForm(); });
-    });
+    function bindAppearanceRadios(nodes) {
+      nodes.forEach(function (r) {
+        r.addEventListener("change", function () { applyFromForm(); });
+      });
+    }
+    bindAppearanceRadios(themeRadios);
+    bindAppearanceRadios(densityRadios);
+    if (accentSelect) accentSelect.addEventListener("change", function () { applyFromForm(); });
+    if (largeCheck) largeCheck.addEventListener("change", function () { applyFromForm(); });
 
     var nameConfirmBtn = document.getElementById("settingsNameConfirm");
     if (nameConfirmBtn) {
       nameConfirmBtn.addEventListener("click", function () {
         var v = getFormValues();
-        var s = getSettings();
-        setSettings({
-          name: v.name,
-          theme: s.theme,
-          accent: s.accent,
-          dietaryRestrictions: s.dietaryRestrictions,
-          weeklyBudget: s.weeklyBudget,
-          weeklySpent: s.weeklySpent,
-          stockNotes: s.stockNotes
-        });
+        setSettings(Object.assign({}, getSettings(), { name: v.name }));
         applySettings();
         if (savedEl) {
           savedEl.textContent = "Name saved.";
@@ -175,10 +220,13 @@
           name: v.name,
           theme: v.theme,
           accent: v.accent,
+          density: v.density,
+          fontSize: v.fontSize,
           dietaryRestrictions: v.dietaryRestrictions,
           weeklyBudget: v.weeklyBudget,
           weeklySpent: v.weeklySpent,
-          stockNotes: v.stockNotes
+          stockNotes: v.stockNotes,
+          shoppingLocation: v.shoppingLocation
         });
         applySettings();
         updateBudgetSummary(v.weeklyBudget, v.weeklySpent);

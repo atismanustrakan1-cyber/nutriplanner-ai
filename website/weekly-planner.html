@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Weekly Planner — NutriPlanner AI</title>
   <meta name="description" content="Plan your week with a simple calendar layout and save events." />
+  <script src="theme-init.js"></script>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body class="weekly-planner-page">
@@ -30,8 +31,9 @@
         <a href="targets.html">Set Targets</a>
         <a href="daylog.html">Day Log</a>
         <a href="weekly-planner.html">Weekly Planner</a>
-        <span id="userGreeting" class="user-greeting"></span>
+        <a href="meal-plan.html">AI Meal Plan</a>
         <a href="settings.html">Settings</a>
+        <span id="userGreeting" class="user-greeting"></span>
         <a class="btn" href="https://github.com/atismanustrakan1-cyber/nutriplanner-ai" target="_blank" rel="noreferrer">GitHub</a>
         <button type="button" id="navAuthSignOut" class="btn ghost small sidebar-sign-out" hidden>Sign out</button>
       </nav>
@@ -43,7 +45,7 @@
     <div class="container">
       <header class="page-header weekly-page-header">
         <h1>Weekly Planner</h1>
-        <p class="lead muted">A weekly plannner to organize your meals for the week with the help of AI</p>
+        <p class="lead muted">A weekly planner to organize your meals. Build a full AI plan with recipes and shopping on <a href="meal-plan.html">AI Meal Plan</a>, then import it here.</p>
       </header>
 
       <div class="card weekly-planner-card weekly-card-light">
@@ -69,19 +71,29 @@
           <label class="weekly-title-input">Event
             <input type="text" id="weeklyTitleInput" placeholder="e.g., Meal prep, Gym, Grocery run" />
           </label>
-          <button class="btn primary" id="weeklyAddEvent" type="button">Add event</button>
+          <label class="weekly-instructions-field">Instructions <span class="muted">(optional)</span>
+            <textarea id="weeklyInstructionsInput" rows="3" placeholder="Recipe notes, links, reminders…"></textarea>
+          </label>
+          <button class="btn primary weekly-add-event-btn" id="weeklyAddEvent" type="button">Add event</button>
         </div>
-        <p class="muted weekly-helper">Tip: leave both times blank for an all-day event. If you only set a start time, the end defaults to one hour later.</p>
+        <p class="muted weekly-helper">Tip: leave both times blank for an all-day event. If you only set a start time, the end defaults to one hour later. Click an event on the calendar to view instructions.</p>
       </div>
 
       <section class="weekly-calendar-shell" aria-live="polite">
         <div class="weekly-calendar-toolbar">
-          <div class="weekly-view-pills">
-            <span class="weekly-pill">Day</span>
-            <span class="weekly-pill weekly-pill-active">Week</span>
-            <span class="weekly-pill">Month</span>
+          <div class="weekly-view-pills" role="tablist" aria-label="Calendar view">
+            <button type="button" class="weekly-pill" id="weeklyViewDay" role="tab" aria-selected="false" data-view="day">Day</button>
+            <button type="button" class="weekly-pill weekly-pill-active" id="weeklyViewWeek" role="tab" aria-selected="true" data-view="week">Week</button>
           </div>
-          <div class="weekly-today-pill">Today</div>
+          <div class="weekly-day-nav" id="weeklyDayNav" hidden>
+            <button type="button" class="btn ghost small weekly-day-nav-btn" id="weeklyFocusPrev" aria-label="Previous day">‹</button>
+            <span id="weeklyFocusLabel" class="weekly-focus-label"></span>
+            <button type="button" class="btn ghost small weekly-day-nav-btn" id="weeklyFocusNext" aria-label="Next day">›</button>
+          </div>
+          <div class="weekly-toolbar-actions">
+            <button type="button" class="btn ghost small" id="weeklyResetAll" title="Remove every event this week">Clear all events</button>
+            <button type="button" class="weekly-today-pill" id="weeklyTodayBtn">Today</button>
+          </div>
         </div>
         <div id="weeklyGrid" class="weekly-calendar-grid"></div>
       </section>
@@ -90,10 +102,35 @@
 
   <footer class="footer">
     <div class="container footer-row">
-      <span>© <span id="year"></span> NutriPlanner AI</span>
-      <span class="muted">C-first MVP • team project</span>
+      <span class="footer-brand">NutriPlanner-AI</span>
+      <span class="muted footer-collab">Collaborative project: Atis, Logan, Isabella, Derick</span>
     </div>
   </footer>
+  </div>
+
+  <div id="weeklyEventDetail" class="weekly-detail-overlay" hidden aria-hidden="true">
+    <div class="weekly-detail-backdrop" id="weeklyDetailBackdrop" tabindex="-1"></div>
+    <div class="weekly-detail-dialog card weekly-card-light" role="dialog" aria-labelledby="weeklyDetailTitle" aria-modal="true">
+      <button type="button" class="weekly-detail-close" id="weeklyDetailClose" aria-label="Close">&times;</button>
+      <h2 id="weeklyDetailTitle" class="weekly-detail-heading"></h2>
+      <p id="weeklyDetailMeta" class="weekly-detail-meta muted"></p>
+      <div id="weeklyDetailBody" class="weekly-detail-body"></div>
+    </div>
+  </div>
+
+  <div id="weeklyClearConfirmOverlay" class="weekly-clear-confirm-overlay" hidden aria-hidden="true">
+    <div class="weekly-clear-confirm-backdrop" id="weeklyClearConfirmBackdrop" tabindex="-1"></div>
+    <div class="weekly-clear-confirm-dialog card weekly-card-light" role="dialog" aria-modal="true" aria-labelledby="weeklyClearConfirmTitle" aria-describedby="weeklyClearConfirmMsg">
+      <div class="weekly-clear-confirm-icon" aria-hidden="true">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h3 id="weeklyClearConfirmTitle" class="weekly-clear-confirm-title">Clear all events?</h3>
+      <p id="weeklyClearConfirmMsg" class="weekly-clear-confirm-msg"></p>
+      <div class="weekly-clear-confirm-actions">
+        <button type="button" class="btn ghost" id="weeklyClearConfirmCancel">Cancel</button>
+        <button type="button" class="btn weekly-clear-confirm-delete" id="weeklyClearConfirmOk">Clear all</button>
+      </div>
+    </div>
   </div>
 
   <script src="nutriplanner.js"></script>

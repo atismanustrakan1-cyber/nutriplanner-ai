@@ -20,12 +20,42 @@ function getClient() {
   var url = window.NUTRIPLANNER_SUPABASE_URL;
   var key = window.NUTRIPLANNER_SUPABASE_ANON_KEY;
   if (!url || !key || String(key).trim() === "") return null;
+  /* Static SPA: use implicit flow (Supabase JS default). PKCE needs a server exchange route for some redirects. */
   return createClient(url, key, {
     auth: {
-      flowType: "pkce",
+      flowType: "implicit",
       detectSessionInUrl: true,
+      persistSession: true,
+      autoRefreshToken: true,
     },
   });
+}
+
+/** Map Supabase Auth errors to clearer copy (see https://supabase.com/docs/guides/auth/passwords). */
+function friendlyAuthError(err) {
+  if (!err) return "Something went wrong. Try again.";
+  var msg = String(err.message || "");
+  var code = err.code || err.name || "";
+  if (code === "email_not_confirmed" || /email.*confirm/i.test(msg)) {
+    return "Confirm your email first — open the link Supabase sent you, then sign in.";
+  }
+  if (
+    code === "invalid_credentials" ||
+    /invalid login credentials/i.test(msg) ||
+    /invalid.*password/i.test(msg)
+  ) {
+    return "Wrong email or password. Check your details or use “Forgot password?”.";
+  }
+  if (/user already registered|already been registered/i.test(msg)) {
+    return "That email already has an account. Sign in instead.";
+  }
+  if (/rate limit|too many requests/i.test(msg)) {
+    return "Too many attempts. Wait a minute and try again.";
+  }
+  if (/network|fetch/i.test(msg)) {
+    return "Network error. Check your connection and try again.";
+  }
+  return msg || "Request failed.";
 }
 
 function clearLocalNutriData() {
@@ -136,7 +166,9 @@ function setNavAuth(client, session) {
   var link = document.getElementById("navAuthLink");
   var userEl = document.getElementById("navAuthUser");
   var outBtn = document.getElementById("navAuthSignOut");
-  if (!link && !userEl && !outBtn) return;
+  var heroSignInRow = document.getElementById("heroSignInRow");
+  var homeSignInCard = document.getElementById("homeSignInCard");
+  if (!link && !userEl && !outBtn && !heroSignInRow && !homeSignInCard) return;
 
   if (!client || !session || !session.user) {
     if (link) show(link, true);
@@ -145,6 +177,8 @@ function setNavAuth(client, session) {
       show(userEl, false);
     }
     if (outBtn) show(outBtn, false);
+    if (heroSignInRow) show(heroSignInRow, true);
+    if (homeSignInCard) show(homeSignInCard, true);
     return;
   }
 
@@ -156,6 +190,8 @@ function setNavAuth(client, session) {
     show(userEl, true);
   }
   if (outBtn) show(outBtn, true);
+  if (heroSignInRow) show(heroSignInRow, false);
+  if (homeSignInCard) show(homeSignInCard, false);
 }
 
 async function initNav(client) {
@@ -189,7 +225,6 @@ async function initLoginPage(client) {
   var signedIn = document.getElementById("authSignedIn");
   var signedOut = document.getElementById("authSignedOut");
   var userLabel = document.getElementById("authUserEmail");
-  var googleBtn = document.getElementById("googleSignIn");
   var emailForm = document.getElementById("emailMagicForm");
   var emailInput = document.getElementById("emailMagicInput");
   var msgEl = document.getElementById("authMessage");
@@ -206,7 +241,8 @@ async function initLoginPage(client) {
   function setMsg(text, isError) {
     if (!msgEl) return;
     msgEl.textContent = text || "";
-    msgEl.style.color = isError ? "var(--error)" : "var(--muted)";
+    msgEl.classList.toggle("auth-alert-error", !!isError && !!text);
+    msgEl.hidden = !text;
   }
 
   var res = await client.auth.getSession();
@@ -218,26 +254,13 @@ async function initLoginPage(client) {
   } else {
     show(signedIn, false);
     show(signedOut, true);
+    setMsg("", false);
   }
 
   var signOutMain = document.getElementById("signOutMain");
   if (signOutMain) {
     signOutMain.addEventListener("click", function () {
       signOutEverywhere(client);
-    });
-  }
-
-  if (googleBtn) {
-    googleBtn.addEventListener("click", function () {
-      setMsg("");
-      client.auth
-        .signInWithOAuth({
-          provider: "google",
-          options: { redirectTo: getRedirectUrl() },
-        })
-        .catch(function (err) {
-          setMsg(err.message || "Google sign-in failed", true);
-        });
     });
   }
 
@@ -257,13 +280,13 @@ async function initLoginPage(client) {
         })
         .then(function (res) {
           if (res.error) {
-            setMsg(res.error.message || "Could not send email", true);
+            setMsg(friendlyAuthError(res.error), true);
             return;
           }
           setMsg("Check your email — we sent you a sign-in link. You can close this tab.", false);
         })
         .catch(function (err) {
-          setMsg(err.message || "Request failed", true);
+          setMsg(friendlyAuthError(err), true);
         });
     });
   }
@@ -275,23 +298,57 @@ async function initLoginPage(client) {
   var signUpEmail = document.getElementById("signUpEmail");
   var signUpPass = document.getElementById("signUpPassword");
   var signUpPass2 = document.getElementById("signUpPasswordConfirm");
-  var signUpBtn = document.getElementById("passwordSignUpBtn");
-  var backBtn = document.getElementById("passwordBackToSignIn");
+  var modeSignIn = document.getElementById("authModeSignIn");
+  var modeSignUp = document.getElementById("authModeSignUp");
+  var panelSignIn = document.getElementById("authPanelSignIn");
+  var panelSignUp = document.getElementById("authPanelSignUp");
   var forgotBtn = document.getElementById("passwordForgotBtn");
 
-  if (signUpBtn && pwForm && signUpForm) {
-    signUpBtn.addEventListener("click", function () {
-      setMsg("");
-      show(pwForm, false);
-      show(signUpForm, true);
-      if (signUpEmail && pwEmail) signUpEmail.value = (pwEmail.value || "").trim();
+  function showAuthMode(signUp) {
+    setMsg("");
+    if (panelSignIn && panelSignUp) {
+      show(panelSignIn, !signUp);
+      show(panelSignUp, !!signUp);
+    }
+    if (modeSignIn && modeSignUp) {
+      modeSignIn.classList.toggle("auth-tab-active", !signUp);
+      modeSignUp.classList.toggle("auth-tab-active", !!signUp);
+      modeSignIn.setAttribute("aria-selected", !signUp ? "true" : "false");
+      modeSignUp.setAttribute("aria-selected", signUp ? "true" : "false");
+      modeSignIn.setAttribute("tabindex", !signUp ? "0" : "-1");
+      modeSignUp.setAttribute("tabindex", signUp ? "0" : "-1");
+    }
+    if (signUp && signUpEmail && pwEmail) {
+      signUpEmail.value = (pwEmail.value || "").trim();
+    }
+    if (!signUp && pwEmail && signUpEmail) {
+      pwEmail.value = (signUpEmail.value || "").trim();
+    }
+  }
+
+  if (modeSignIn) {
+    modeSignIn.addEventListener("click", function () {
+      showAuthMode(false);
     });
   }
-  if (backBtn && pwForm && signUpForm) {
-    backBtn.addEventListener("click", function () {
-      setMsg("");
-      show(signUpForm, false);
-      show(pwForm, true);
+  if (modeSignUp) {
+    modeSignUp.addEventListener("click", function () {
+      showAuthMode(true);
+    });
+  }
+
+  var tablistEl = modeSignIn && modeSignIn.parentElement;
+  if (tablistEl && modeSignIn && modeSignUp) {
+    tablistEl.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        showAuthMode(true);
+        modeSignUp.focus();
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        showAuthMode(false);
+        modeSignIn.focus();
+      }
     });
   }
 
@@ -309,13 +366,13 @@ async function initLoginPage(client) {
         .signInWithPassword({ email: email, password: password })
         .then(function (res) {
           if (res.error) {
-            setMsg(res.error.message || "Sign-in failed", true);
+            setMsg(friendlyAuthError(res.error), true);
             return;
           }
           window.location.reload();
         })
         .catch(function (err) {
-          setMsg(err.message || "Sign-in failed", true);
+          setMsg(friendlyAuthError(err), true);
         });
     });
   }
@@ -347,7 +404,7 @@ async function initLoginPage(client) {
         })
         .then(function (res) {
           if (res.error) {
-            setMsg(res.error.message || "Sign up failed", true);
+            setMsg(friendlyAuthError(res.error), true);
             return;
           }
           if (res.data && res.data.session) {
@@ -355,12 +412,12 @@ async function initLoginPage(client) {
             return;
           }
           setMsg(
-            "Account created. If email confirmation is required in Supabase, check your inbox — otherwise try Sign in.",
+            "Check your email to confirm your account (if confirmations are on in Supabase), then sign in.",
             false
           );
         })
         .catch(function (err) {
-          setMsg(err.message || "Sign up failed", true);
+          setMsg(friendlyAuthError(err), true);
         });
     });
   }
@@ -377,13 +434,13 @@ async function initLoginPage(client) {
         .resetPasswordForEmail(email, { redirectTo: getRedirectUrl() })
         .then(function (res) {
           if (res.error) {
-            setMsg(res.error.message || "Could not send reset email", true);
+            setMsg(friendlyAuthError(res.error), true);
             return;
           }
           setMsg("If that email is registered, you’ll get a link to set a new password.", false);
         })
         .catch(function (err) {
-          setMsg(err.message || "Request failed", true);
+          setMsg(friendlyAuthError(err), true);
         });
     });
   }

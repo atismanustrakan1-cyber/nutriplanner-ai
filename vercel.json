@@ -12,6 +12,9 @@
     },
     "api/food-search.js": {
       "runtime": "@vercel/node@5.3.24"
+    },
+    "api/meal-plan-week.js": {
+      "runtime": "@vercel/node@5.3.24"
     }
   },
   "routes": [

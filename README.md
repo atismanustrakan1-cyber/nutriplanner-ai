@@ -1,6 +1,20 @@
 NutriPlanner AI
 
-NutriPlanner AI is a C-first nutrition management engine designed to provide structured calorie targeting, macro distribution calculations, and daily intake tracking. The system is built with a layered architecture approach, beginning with a tested and portable C core that can later support higher-level interfaces (CLI, Python wrapper, web, or mobile clients).
+## Web app & API (Vercel)
+
+The production site is a static front end (`website/`) plus a **Node.js Express** API packaged as Vercel serverless functions. Each file under `api/` re-exports `backend/server.js`; routing is defined in `vercel.json` (static files + `/api/*`).
+
+- **AI**: OpenRouter (`OPENROUTER_API_KEY`) — chat, scan-food, weekly meal plan.
+- **Food search**: USDA FoodData Central — set **`FOOD_API_KEY` or `USDA_API_KEY`** (either name is read; use one). See `backend/.env.example`.
+- **Auth / sync**: Supabase (client config in `website/auth-config.js`); optional cloud sync for targets, meals, settings, weekly events.
+
+Deploy: `npx vercel --prod` from the repo root, or connect the repository in the Vercel dashboard. Do not commit `.env` or API keys.
+
+---
+
+## C core (engine)
+
+NutriPlanner AI includes a C-first nutrition management engine designed to provide structured calorie targeting, macro distribution calculations, and daily intake tracking. The system is built with a layered architecture approach, beginning with a tested and portable C core that can later support higher-level interfaces (CLI, web, or mobile clients).
 
 The current repository focuses on delivering a stable and testable Minimum Viable Product (MVP) of the core engine.
 

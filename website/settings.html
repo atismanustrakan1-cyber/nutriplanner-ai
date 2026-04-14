@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Settings — NutriPlanner AI</title>
   <meta name="description" content="Your name, dietary restrictions, budget, stock, and UI preferences." />
+  <script src="theme-init.js"></script>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -30,8 +31,9 @@
         <a href="targets.html">Set Targets</a>
         <a href="daylog.html">Day Log</a>
         <a href="weekly-planner.html">Weekly Planner</a>
-        <span id="userGreeting" class="user-greeting"></span>
+        <a href="meal-plan.html">AI Meal Plan</a>
         <a href="settings.html">Settings</a>
+        <span id="userGreeting" class="user-greeting"></span>
         <a class="btn" href="https://github.com/atismanustrakan1-cyber/nutriplanner-ai" target="_blank" rel="noreferrer">GitHub</a>
         <button type="button" id="navAuthSignOut" class="btn ghost small sidebar-sign-out" hidden>Sign out</button>
       </nav>
@@ -43,7 +45,7 @@
     <div class="container">
       <header class="page-header">
         <h1>Settings</h1>
-        <p class="lead muted">Your name, diet & budget, what you have on hand, and how the app looks.</p>
+        <p class="lead muted">Your name, diet & budget, shopping area, pantry, and how the app looks.</p>
       </header>
 
       <div class="panel settings-panel settings-name-panel">
@@ -80,10 +82,16 @@
           <label class="settings-label" for="settingsStock">What I have on hand (stock)</label>
           <textarea id="settingsStock" class="settings-textarea" placeholder="e.g. chicken, rice, eggs, spinach" rows="3" maxlength="800"></textarea>
         </div>
+        <div class="settings-group">
+          <label class="settings-label" for="settingsShoppingLocation">Shopping area (for AI meal plans)</label>
+          <input type="text" id="settingsShoppingLocation" class="settings-input" placeholder="e.g. Orlando, FL or 32826 — neighborhood" maxlength="200" autocomplete="address-level2" />
+          <p class="settings-hint muted">City, ZIP, or neighborhood. The AI uses this to suggest realistic nearby stores in each ingredient’s “where to buy” line.</p>
+        </div>
       </div>
 
-      <div class="panel settings-panel">
+      <div class="panel settings-panel settings-appearance-panel">
         <h2>Appearance</h2>
+        <p class="settings-section-desc muted">Theme, accent, and layout (saved here and synced when signed in).</p>
         <div class="settings-group">
           <span class="settings-group-label">Theme</span>
           <div class="settings-options" role="group" aria-label="Theme">
@@ -92,12 +100,28 @@
           </div>
         </div>
         <div class="settings-group">
-          <span class="settings-group-label">Accent color</span>
-          <div class="settings-options" role="group" aria-label="Accent color">
-            <label class="settings-option-btn"><input type="radio" name="accent" value="default" checked /> <span>Default</span></label>
-            <label class="settings-option-btn"><input type="radio" name="accent" value="warm" /> <span>Warm</span></label>
-            <label class="settings-option-btn"><input type="radio" name="accent" value="green" /> <span>Green</span></label>
+          <label class="settings-label" for="settingsAccent">Accent</label>
+          <select id="settingsAccent" class="settings-select" aria-label="Accent color">
+            <option value="default">Default (coral)</option>
+            <option value="warm">Warm (amber)</option>
+            <option value="green">Green (teal)</option>
+            <option value="blue">Ocean (blue)</option>
+            <option value="violet">Violet</option>
+          </select>
+        </div>
+        <div class="settings-group">
+          <span class="settings-group-label">Layout</span>
+          <div class="settings-options" role="group" aria-label="Layout density">
+            <label class="settings-option-btn"><input type="radio" name="density" value="comfortable" checked /> <span>Comfortable</span></label>
+            <label class="settings-option-btn"><input type="radio" name="density" value="compact" /> <span>Compact</span></label>
           </div>
+          <p class="settings-hint muted">Compact tightens spacing and uses slightly sharper corners.</p>
+        </div>
+        <div class="settings-group settings-group-checkbox">
+          <label class="settings-check-label">
+            <input type="checkbox" id="settingsLargeText" />
+            <span>Larger text</span>
+          </label>
         </div>
       </div>
 
@@ -110,8 +134,8 @@
 
   <footer class="footer">
     <div class="container footer-row">
-      <span>© <span id="year"></span> NutriPlanner AI</span>
-      <span class="muted">C-first MVP • team project</span>
+      <span class="footer-brand">NutriPlanner-AI</span>
+      <span class="muted footer-collab">Collaborative project: Atis, Logan, Isabella, Derick</span>
     </div>
   </footer>
   </div>
