@@ -8,7 +8,7 @@
  *    https://YOUR-PROJECT.vercel.app/login.html
  *    http://localhost:8000/login.html
  * 4) Authentication → Providers → Email: enable and allow password sign-in (and magic link if you want).
- *    Optionally enable Google. Custom SMTP improves delivery for magic link / password reset emails.
+ *    Custom SMTP improves delivery for magic link / password reset emails.
  *
  * Optional API backend (food search, chat, camera scan):
  * If the site is opened as static files (e.g. GitHub Pages) or POST returns "405 Method Not Allowed",

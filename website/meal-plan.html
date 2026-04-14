@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AI Meal Plan — NutriPlanner AI</title>
+  <meta name="description" content="Generate a weekly meal plan from your settings: recipes, shopping, prices, and import to the weekly planner." />
+  <script src="theme-init.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="meal-plan-page">
+  <button type="button" class="sidebar-menu-btn" id="sidebarMenuBtn" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false">
+    <span class="sidebar-menu-icon" aria-hidden="true"></span>
+  </button>
+  <div class="sidebar-backdrop" id="sidebarBackdrop" hidden aria-hidden="true"></div>
+  <div class="top-auth-bar" aria-label="Account">
+    <a href="login.html" id="navAuthLink" class="btn ghost small top-auth-login">Log in</a>
+    <span id="navAuthUser" class="nav-auth-user top-auth-user" hidden></span>
+  </div>
+  <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+    <div class="sidebar-inner">
+      <a href="index.html" class="sidebar-brand">
+        <img src="logo.png" alt="" class="logo" width="44" height="44" />
+        <div class="sidebar-brand-text">
+          <div class="title">NutriPlanner AI</div>
+          <div class="subtitle">Hack@UCF</div>
+        </div>
+      </a>
+      <nav class="nav sidebar-nav" id="nav">
+        <a href="index.html">Home</a>
+        <a href="targets.html">Set Targets</a>
+        <a href="daylog.html">Day Log</a>
+        <a href="weekly-planner.html">Weekly Planner</a>
+        <a href="meal-plan.html">AI Meal Plan</a>
+        <a href="settings.html">Settings</a>
+        <span id="userGreeting" class="user-greeting"></span>
+        <a class="btn" href="https://github.com/atismanustrakan1-cyber/nutriplanner-ai" target="_blank" rel="noreferrer">GitHub</a>
+        <button type="button" id="navAuthSignOut" class="btn ghost small sidebar-sign-out" hidden>Sign out</button>
+      </nav>
+    </div>
+  </aside>
+
+  <div class="app-content">
+  <main class="page-main">
+    <div class="container">
+      <header class="page-header meal-plan-header">
+        <h1>AI weekly meal plan</h1>
+        <p class="lead muted meal-plan-intro">Uses your <a href="settings.html">Settings</a> (diet, budget, pantry, shopping area) and <a href="targets.html">targets</a> (calories &amp; macros) to build a full week with recipes, where to shop near you, estimated prices, and calendar slots you can import into the <a href="weekly-planner.html">Weekly Planner</a>.</p>
+      </header>
+
+      <section class="meal-plan-setup card meal-plan-setup-card" aria-labelledby="meal-plan-setup-title">
+        <div class="meal-plan-setup-top">
+          <h2 id="meal-plan-setup-title">What we’ll send to the AI</h2>
+          <p class="meal-plan-params-hint muted">Update <a href="settings.html">Settings</a> and <a href="targets.html">Set Targets</a>, then refresh before generating for the latest numbers.</p>
+        </div>
+        <div id="mealPlanContextPreview" class="meal-plan-context-root" aria-live="polite"></div>
+        <div class="meal-plan-actions-top">
+          <button type="button" class="btn primary meal-plan-generate-btn" id="mealPlanGenerate">Generate plan with AI</button>
+          <span id="mealPlanStatus" class="meal-plan-status" aria-live="polite"></span>
+        </div>
+      </section>
+
+      <div id="mealPlanResults" class="meal-plan-results" hidden>
+        <div class="meal-plan-summary-panel card meal-plan-summary-card">
+          <div class="meal-plan-summary-row">
+            <span id="mealPlanTotalCost" class="meal-plan-total-cost"></span>
+            <span id="mealPlanBudgetNote" class="meal-plan-budget-note muted"></span>
+          </div>
+          <div class="meal-plan-import-row">
+            <button type="button" class="btn primary" id="mealPlanImportPlanner">Add meals to Weekly Planner</button>
+            <a class="btn ghost" href="weekly-planner.html">Open Weekly Planner</a>
+            <span id="mealPlanImportStatus" class="muted meal-plan-import-status" aria-live="polite"></span>
+          </div>
+        </div>
+        <div id="mealPlanDays" class="meal-plan-days meal-plan-days-grid"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-row">
+      <span class="footer-brand">NutriPlanner-AI</span>
+      <span class="muted footer-collab">Collaborative project: Atis, Logan, Isabella, Derick</span>
+    </div>
+  </footer>
+  </div>
+
+  <script src="nutriplanner.js"></script>
+  <script src="auth-config.js"></script>
+  <script type="module" src="auth.js"></script>
+  <script src="nav.js"></script>
+  <script src="script.js"></script>
+  <script src="settings.js"></script>
+  <script src="meal-plan.js"></script>
+</body>
+</html>

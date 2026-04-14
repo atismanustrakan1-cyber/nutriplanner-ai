@@ -65,6 +65,9 @@
       if (s.stockNotes && s.stockNotes.trim()) {
         lines.push("What user has on hand (stock): " + s.stockNotes.trim());
       }
+      if (s.shoppingLocation && String(s.shoppingLocation).trim()) {
+        lines.push("User's shopping area (for nearby store suggestions): " + String(s.shoppingLocation).trim());
+      }
       return lines;
     } catch (e) {
       return [];
