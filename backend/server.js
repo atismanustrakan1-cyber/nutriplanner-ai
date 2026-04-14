@@ -30,7 +30,6 @@ app.use(function vercelApiPathFix(req, res, next) {
   var fix =
     (pathOnly === "/scan-food" && req.method === "POST") ||
     (pathOnly === "/chat" && req.method === "POST") ||
-    (pathOnly === "/meal-plan-week" && req.method === "POST") ||
     (pathOnly === "/food-search" && req.method === "GET");
   if (fix) {
     req.url = "/api" + pathOnly + qs;
@@ -49,73 +48,6 @@ const FDC_FAT = 1004;
 
 function httpError(res, status, detail) {
   return res.status(status).json({ detail });
-}
-
-/** Remove ```json ... ``` wrappers the model sometimes adds anyway. */
-function stripMarkdownJsonFence(text) {
-  let t = String(text).trim();
-  if (t.startsWith("```")) {
-    const firstNl = t.indexOf("\n");
-    if (firstNl !== -1) t = t.slice(firstNl + 1);
-    t = t.replace(/\n?```\s*$/i, "").trim();
-  }
-  return t;
-}
-
-/**
- * First `{` … matching `}` by depth, ignoring braces inside JSON strings.
- * Fixes failures when slice(start, lastIndexOf("}")) includes extra `}` inside string values or misses truncated tails.
- */
-function extractFirstBalancedJsonObject(text) {
-  const s = String(text);
-  const start = s.indexOf("{");
-  if (start === -1) return null;
-  let depth = 0;
-  let inString = false;
-  let escape = false;
-  for (let i = start; i < s.length; i++) {
-    const c = s[i];
-    if (escape) {
-      escape = false;
-      continue;
-    }
-    if (inString) {
-      if (c === "\\") escape = true;
-      else if (c === '"') inString = false;
-      continue;
-    }
-    if (c === '"') {
-      inString = true;
-      continue;
-    }
-    if (c === "{") depth++;
-    else if (c === "}") {
-      depth--;
-      if (depth === 0) return s.slice(start, i + 1);
-    }
-  }
-  return null;
-}
-
-function parseJsonObjectFromAiContent(raw) {
-  const cleaned = stripMarkdownJsonFence(raw);
-  const trimmed = cleaned.trim();
-  if (!trimmed) return { error: "empty" };
-  try {
-    const o = JSON.parse(trimmed);
-    if (o && typeof o === "object" && !Array.isArray(o)) return { obj: o };
-  } catch (_e) {
-    // continue
-  }
-  const slice = extractFirstBalancedJsonObject(trimmed);
-  if (!slice) return { error: "no_object" };
-  try {
-    const o = JSON.parse(slice);
-    if (o && typeof o === "object" && !Array.isArray(o)) return { obj: o };
-    return { error: "not_object" };
-  } catch (_e) {
-    return { error: "invalid_json" };
-  }
 }
 
 async function foodSearchHandler(req, res) {
@@ -142,25 +74,10 @@ async function foodSearchHandler(req, res) {
     });
 
     if (!response.ok) {
-      if (response.status === 401 || response.status === 403) {
-        return httpError(
-          res,
-          502,
-          "USDA FoodData Central rejected this API key. Confirm FOOD_API_KEY or USDA_API_KEY matches your key from https://fdc.nal.usda.gov/api-key-signup.html",
-        );
-      }
       if (response.status === 404) {
-        return httpError(
-          res,
-          502,
-          "Food search endpoint not found (unexpected for USDA FDC). Check the key and network.",
-        );
+        return httpError(res, 502, "Food API endpoint not found. Check FOOD_API_KEY or USDA_API_KEY.");
       }
-      return httpError(
-        res,
-        502,
-        `Food search failed (HTTP ${response.status}). Verify FOOD_API_KEY or USDA_API_KEY on the server.`,
-      );
+      return httpError(res, 502, `Food search failed: HTTP ${response.status}`);
     }
 
     const data = await response.json();
@@ -317,117 +234,6 @@ async function chatHandler(req, res) {
 }
 app.post("/api/chat", chatHandler);
 app.post("/chat", chatHandler);
-
-const MEAL_PLAN_WEEK_SUFFIX = `Create a complete Monday–Sunday meal plan (breakfast, lunch, dinner each day = 21 meals) that fits the user's calories, macros, dietary notes, budget, and uses their on-hand ingredients when sensible.
-
-For EVERY meal include:
-- "title": short name
-- "slot": "breakfast" | "lunch" | "dinner"
-- "day": "Monday" through "Sunday"
-- "startTime" and "endTime": "HH:MM" 24h (reasonable meal times)
-- "recipe": concise instructions (amounts + short numbered steps; keep under ~120 words per meal so the full week fits in one JSON response)
-- "shopping": array of { "item": string, "approx_price_usd": number, "where_buy": string } for ingredients mainly needed for that meal. For "where_buy", name realistic places near the user's area when their message includes a shopping location (city, ZIP, neighborhood, or region)—e.g. a regional grocery chain, farmers market, or "Walmart near [area]". If no location is given, use typical US chains. Be specific about store type or area, not GPS coordinates.
-- "meal_cost_usd": rough sum of that meal's shopping lines
-
-Also include:
-- "total_estimated_usd": sum of meal_cost_usd (approximate)
-- "budget_note": one sentence if budget cannot be met or is tight; else ""
-- "planner_events": same number of entries as meals, each { "day", "startTime", "endTime", "title" } where title is short for a calendar e.g. "Breakfast: Oatmeal bowl"
-
-Reply with ONLY one JSON object, no markdown. Use realistic prices; if unknown use 0 for approx_price_usd and explain in item name.`;
-
-async function mealPlanWeekHandler(req, res) {
-  const apiKey = (process.env.OPENROUTER_API_KEY || "").trim();
-  if (!apiKey) {
-    return httpError(
-      res,
-      500,
-      "OPENROUTER_API_KEY not set. Add it to a .env file in the backend folder.",
-    );
-  }
-
-  const context = String((req.body && req.body.context) || "").trim();
-  if (!context) {
-    return httpError(res, 400, "context is required (build from Settings + Targets on the client).");
-  }
-  if (context.length > 14000) {
-    return httpError(res, 400, "context too long (max 14000 characters).");
-  }
-
-  const userMessage =
-    "User data and preferences:\n\n" + context + "\n\n" + MEAL_PLAN_WEEK_SUFFIX;
-
-  const payload = {
-    model: "openai/gpt-4o-mini",
-    messages: [
-      {
-        role: "system",
-        content:
-          "You are a nutrition-aware meal planner. Output only a single valid JSON object matching the user's schema. No code fences, no commentary before or after the object.",
-      },
-      { role: "user", content: userMessage },
-    ],
-    max_tokens: 12000,
-    temperature: 0.45,
-    response_format: { type: "json_object" },
-  };
-
-  try {
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://nutriplanner-ai.local",
-      },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(120000),
-    });
-
-    if (!response.ok) {
-      return httpError(res, 502, `Meal plan AI failed: HTTP ${response.status}`);
-    }
-
-    const data = await response.json();
-    const choice = data?.choices?.[0];
-    const text = String(choice?.message?.content || "").trim();
-    const finishReason = String(choice?.finish_reason || "");
-
-    const parsed = parseJsonObjectFromAiContent(text);
-    if (!parsed.obj) {
-      const truncated =
-        finishReason === "length"
-          ? " Response was cut off (token limit). Try again, or shorten targets/context."
-          : "";
-      if (parsed.error === "empty") {
-        return httpError(res, 502, "Empty response from meal plan AI." + truncated);
-      }
-      if (parsed.error === "no_object") {
-        return httpError(res, 502, "Could not find a JSON object in the meal plan AI response." + truncated);
-      }
-      return httpError(res, 502, "Invalid JSON from meal plan AI." + truncated);
-    }
-    const out = parsed.obj;
-
-    const meals = Array.isArray(out.meals) ? out.meals : [];
-    const plannerEvents = Array.isArray(out.planner_events) ? out.planner_events : [];
-
-    return res.json({
-      budget_note: String(out.budget_note || "").trim(),
-      total_estimated_usd:
-        typeof out.total_estimated_usd === "number" && Number.isFinite(out.total_estimated_usd)
-          ? out.total_estimated_usd
-          : null,
-      meals,
-      planner_events: plannerEvents,
-    });
-  } catch (err) {
-    return httpError(res, 502, err.message || "Meal plan request failed.");
-  }
-}
-
-app.post("/api/meal-plan-week", mealPlanWeekHandler);
-app.post("/meal-plan-week", mealPlanWeekHandler);
 
 const SCAN_FOOD_PROMPT = `You are helping a meal-logging app. Look at this image carefully.
 

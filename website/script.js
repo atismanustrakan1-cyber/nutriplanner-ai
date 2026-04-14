@@ -4,6 +4,11 @@
   var STORAGE_WEEKLY_EVENTS = "nutriplanner_weekly_events";
   var DEFAULT_TARGETS = { targetCalories: 2100, targetMacros: { protein_g: 112, carbs_g: 230, fat_g: 56 } };
 
+  function setYear() {
+    var el = document.getElementById("year");
+    if (el) el.textContent = new Date().getFullYear();
+  }
+
   function copyText(text, msgEl) {
     navigator.clipboard.writeText(text).then(function () {
       if (msgEl) msgEl.textContent = "Copied.";
@@ -908,120 +913,8 @@
     var startTimeEl = document.getElementById("weeklyStartTimeInput");
     var endTimeEl = document.getElementById("weeklyEndTimeInput");
     var titleEl = document.getElementById("weeklyTitleInput");
-    var instructionsEl = document.getElementById("weeklyInstructionsInput");
     var addBtn = document.getElementById("weeklyAddEvent");
-    var resetAllBtn = document.getElementById("weeklyResetAll");
-    var detailOverlay = document.getElementById("weeklyEventDetail");
-    var detailTitle = document.getElementById("weeklyDetailTitle");
-    var detailMeta = document.getElementById("weeklyDetailMeta");
-    var detailBody = document.getElementById("weeklyDetailBody");
-    var detailClose = document.getElementById("weeklyDetailClose");
-    var detailBackdrop = document.getElementById("weeklyDetailBackdrop");
-    var clearOverlay = document.getElementById("weeklyClearConfirmOverlay");
-    var clearBackdrop = document.getElementById("weeklyClearConfirmBackdrop");
-    var clearMsg = document.getElementById("weeklyClearConfirmMsg");
-    var clearCancel = document.getElementById("weeklyClearConfirmCancel");
-    var clearOk = document.getElementById("weeklyClearConfirmOk");
-    var pillDay = document.getElementById("weeklyViewDay");
-    var pillWeek = document.getElementById("weeklyViewWeek");
-    var dayNavEl = document.getElementById("weeklyDayNav");
-    var focusPrevBtn = document.getElementById("weeklyFocusPrev");
-    var focusNextBtn = document.getElementById("weeklyFocusNext");
-    var focusLabelEl = document.getElementById("weeklyFocusLabel");
-    var todayBtnEl = document.getElementById("weeklyTodayBtn");
     if (!gridEl || !dayEl || !startTimeEl || !endTimeEl || !titleEl || !addBtn) return;
-
-    var DRAG_THRESHOLD_PX = 10;
-
-    function weeklyModalScrollLock() {
-      var detailOpen = detailOverlay && !detailOverlay.hasAttribute("hidden");
-      var clearOpen = clearOverlay && !clearOverlay.hasAttribute("hidden");
-      document.body.style.overflow = detailOpen || clearOpen ? "hidden" : "";
-    }
-
-    function closeWeeklyDetail() {
-      if (!detailOverlay) return;
-      detailOverlay.setAttribute("hidden", "");
-      detailOverlay.setAttribute("aria-hidden", "true");
-      weeklyModalScrollLock();
-    }
-
-    function openWeeklyDetail(ev) {
-      if (!detailOverlay || !detailTitle || !detailMeta || !detailBody) return;
-      detailTitle.textContent = ev.title || "Event";
-      var range = getEventTimeRange(ev);
-      var timePart = "";
-      if (range) {
-        timePart = formatTimeRange(range.start, range.end);
-      } else {
-        timePart = "All day";
-      }
-      detailMeta.textContent = (ev.day || "") + " · " + timePart;
-      var instr = ev.instructions != null ? String(ev.instructions).trim() : "";
-      detailBody.textContent = instr || "No instructions for this event. Add text when creating an event, or import from AI Meal Plan to attach recipes.";
-      detailOverlay.removeAttribute("hidden");
-      detailOverlay.setAttribute("aria-hidden", "false");
-      weeklyModalScrollLock();
-      if (detailClose) detailClose.focus();
-    }
-
-    if (detailClose) detailClose.addEventListener("click", closeWeeklyDetail);
-    if (detailBackdrop) detailBackdrop.addEventListener("click", closeWeeklyDetail);
-    if (detailOverlay) {
-      detailOverlay.addEventListener("keydown", function (e) {
-        if (e.key === "Escape") closeWeeklyDetail();
-      });
-    }
-
-    function closeWeeklyClearConfirm() {
-      if (!clearOverlay) return;
-      clearOverlay.setAttribute("hidden", "");
-      clearOverlay.setAttribute("aria-hidden", "true");
-      weeklyModalScrollLock();
-    }
-
-    function openWeeklyClearConfirm() {
-      var n = getStoredWeeklyEvents().length;
-      if (n === 0 || !clearOverlay || !clearMsg) return;
-      var word = n === 1 ? "event" : "events";
-      clearMsg.textContent =
-        "This will remove " +
-        n +
-        " " +
-        word +
-        " from your weekly planner. Recipes and instructions stored on those events will be deleted. This cannot be undone.";
-      clearOverlay.removeAttribute("hidden");
-      clearOverlay.setAttribute("aria-hidden", "false");
-      weeklyModalScrollLock();
-      if (clearCancel) clearCancel.focus();
-    }
-
-    function confirmWeeklyClear() {
-      setStoredWeeklyEvents([]);
-      closeWeeklyClearConfirm();
-      closeWeeklyDetail();
-      render();
-    }
-
-    if (resetAllBtn) {
-      resetAllBtn.addEventListener("click", function () {
-        if (getStoredWeeklyEvents().length === 0) return;
-        if (clearOverlay && clearMsg) {
-          openWeeklyClearConfirm();
-        } else if (window.confirm("Remove all events from the weekly planner?")) {
-          setStoredWeeklyEvents([]);
-          render();
-        }
-      });
-    }
-    if (clearCancel) clearCancel.addEventListener("click", closeWeeklyClearConfirm);
-    if (clearOk) clearOk.addEventListener("click", confirmWeeklyClear);
-    if (clearBackdrop) clearBackdrop.addEventListener("click", closeWeeklyClearConfirm);
-    if (clearOverlay) {
-      clearOverlay.addEventListener("keydown", function (e) {
-        if (e.key === "Escape") closeWeeklyClearConfirm();
-      });
-    }
 
     var days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
     // Full day: 12:00 AM (midnight) through 11:59 PM
@@ -1032,40 +925,7 @@
     /** Minute after 11:59 PM (exclusive end of day), for range math. */
     var endOfDayExclusive = 24 * 60;
     var hourHeight = 58;
-    /** Short slots (e.g. 30 min) need extra pixels so the title stays readable; may extend below the nominal time range. */
-    var minTimedEventHeight = 76;
     var palette = ["blue", "green", "pink", "orange", "purple"];
-    var VIEW_KEY = "nutriplanner_calendar_view";
-    function getTodayWeekdayName() {
-      var sun0 = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-      return sun0[new Date().getDay()];
-    }
-    function loadCalendarView() {
-      try {
-        var raw = localStorage.getItem(VIEW_KEY);
-        if (raw) {
-          var o = JSON.parse(raw);
-          var mode = o.mode === "day" || o.mode === "week" ? o.mode : "week";
-          var fd = typeof o.focusDay === "string" ? o.focusDay : getTodayWeekdayName();
-          if (days.indexOf(fd) === -1) {
-            fd = getTodayWeekdayName();
-            if (days.indexOf(fd) === -1) fd = "Monday";
-          }
-          return { mode: mode, focusDay: fd };
-        }
-      } catch (_vc) {}
-      var t = getTodayWeekdayName();
-      if (days.indexOf(t) === -1) t = "Monday";
-      return { mode: "week", focusDay: t };
-    }
-    function saveCalendarView() {
-      try {
-        localStorage.setItem(VIEW_KEY, JSON.stringify({ mode: viewMode, focusDay: focusDay }));
-      } catch (_vs) {}
-    }
-    var _calendarView = loadCalendarView();
-    var viewMode = _calendarView.mode;
-    var focusDay = _calendarView.focusDay;
 
     function safeText(v) {
       return String(v || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -1138,88 +998,89 @@
       render();
     }
 
-    function partitionWeeklyEvents(events) {
+    function render() {
+      var events = getStoredWeeklyEvents();
+      gridEl.innerHTML = "";
       var allDayByDay = {};
       var timedByDay = {};
       days.forEach(function (d) {
         allDayByDay[d] = [];
         timedByDay[d] = [];
       });
+
       events.forEach(function (ev, idx) {
         if (!ev || days.indexOf(ev.day) === -1) return;
         var range = getEventTimeRange(ev);
-        var color = palette[idx % palette.length];
         if (range == null) {
-          allDayByDay[ev.day].push({ event: ev, color: color });
+          allDayByDay[ev.day].push({ event: ev, color: palette[idx % palette.length] });
         } else {
           timedByDay[ev.day].push({
             event: ev,
             startMin: range.start,
             endMin: range.end,
-            color: color
+            color: palette[idx % palette.length]
           });
         }
       });
+
       days.forEach(function (d) {
         timedByDay[d].sort(function (a, b) { return a.startMin - b.startMin; });
       });
-      return { allDayByDay: allDayByDay, timedByDay: timedByDay };
-    }
 
-    function updateViewToolbar() {
-      if (pillDay) {
-        pillDay.classList.toggle("weekly-pill-active", viewMode === "day");
-        pillDay.setAttribute("aria-selected", viewMode === "day" ? "true" : "false");
+      var dayHeader = "<div class=\"weekly-time-col-header\"></div>" + days.map(function (d) {
+        return "<div class=\"weekly-day-header\">" + d.slice(0, 3) + "</div>";
+      }).join("");
+
+      var allDayRow = "<div class=\"weekly-all-day-label\">all-day</div>" + days.map(function (d) {
+        var items = allDayByDay[d].map(function (slot) {
+          var ev = slot.event;
+          return "<div class=\"weekly-all-day-event weekly-color-" + slot.color + "\">" +
+            "<button type=\"button\" class=\"weekly-shift-btn weekly-shift-left\" data-id=\"" + safeText(ev.id) + "\" aria-label=\"Move event left\">&#x2039;</button>" +
+            "<span class=\"weekly-all-day-title\">" + safeText(ev.title) + "</span>" +
+            "<button type=\"button\" class=\"weekly-shift-btn weekly-shift-right\" data-id=\"" + safeText(ev.id) + "\" aria-label=\"Move event right\">&#x203A;</button>" +
+            "<button type=\"button\" class=\"weekly-event-remove-mini\" data-id=\"" + safeText(ev.id) + "\" aria-label=\"Remove event\">×</button></div>";
+        }).join("");
+        return "<div class=\"weekly-all-day-cell\">" + (items || "<span class=\"weekly-empty muted\">—</span>") + "</div>";
+      }).join("");
+
+      var labels = "";
+      for (var h = startHour; h <= endHour; h++) {
+        labels += "<div class=\"weekly-hour-label\">" + hourLabel(h) + "</div>";
       }
-      if (pillWeek) {
-        pillWeek.classList.toggle("weekly-pill-active", viewMode === "week");
-        pillWeek.setAttribute("aria-selected", viewMode === "week" ? "true" : "false");
-      }
-      if (dayNavEl) {
-        if (viewMode === "day") {
-          dayNavEl.removeAttribute("hidden");
-        } else {
-          dayNavEl.setAttribute("hidden", "");
+
+      var tracks = days.map(function (d) {
+        var lines = "";
+        for (var h = startHour; h <= endHour; h++) {
+          lines += "<div class=\"weekly-hour-line\"></div>";
         }
-      }
-      if (focusLabelEl && viewMode === "day") {
-        focusLabelEl.textContent = focusDay;
-      }
-      if (viewMode === "day" && dayEl && days.indexOf(focusDay) >= 0) {
-        dayEl.value = focusDay;
-      }
-    }
 
-    function setViewMode(mode) {
-      if (mode !== "day" && mode !== "week") return;
-      viewMode = mode;
-      saveCalendarView();
-      render();
-    }
+        var blocks = timedByDay[d].map(function (slot) {
+          var startMins = startHour * 60;
+          var totalMins = (endHour - startHour + 1) * 60;
+          var top = ((slot.startMin - startMins) / 60) * hourHeight;
+          if (top < 0) top = 0;
+          var trackHeight = (totalMins / 60) * hourHeight;
+          var durationMin = Math.max(15, slot.endMin - slot.startMin);
+          var heightPx = Math.max(28, (durationMin / 60) * hourHeight - 2);
+          if (top + heightPx > trackHeight) heightPx = Math.max(28, trackHeight - top);
+          var title = safeText(slot.event.title);
+          var timeRange = formatTimeRange(slot.startMin, slot.endMin);
+          return "<div class=\"weekly-event-block weekly-color-" + slot.color + "\" style=\"top:" + top + "px;height:" + heightPx + "px\">" +
+            "<button type=\"button\" class=\"weekly-shift-btn weekly-shift-left\" data-id=\"" + safeText(slot.event.id) + "\" aria-label=\"Move event to previous day\">&#x2039;</button>" +
+            "<button type=\"button\" class=\"weekly-shift-btn weekly-shift-right\" data-id=\"" + safeText(slot.event.id) + "\" aria-label=\"Move event to next day\">&#x203A;</button>" +
+            "<div class=\"weekly-event-row\"><span class=\"weekly-event-time\">" + safeText(timeRange) + "</span>" +
+            "<button type=\"button\" class=\"weekly-event-remove-mini\" data-id=\"" + safeText(slot.event.id) + "\" aria-label=\"Remove event\">×</button></div>" +
+            "<div class=\"weekly-event-title\">" + title + "</div></div>";
+        }).join("");
 
-    function focusDayStep(delta) {
-      var idx = days.indexOf(focusDay);
-      if (idx < 0) idx = 0;
-      idx = (idx + delta + days.length) % days.length;
-      focusDay = days[idx];
-      saveCalendarView();
-      if (dayEl && days.indexOf(focusDay) >= 0) {
-        dayEl.value = focusDay;
-      }
-      render();
-    }
+        return "<div class=\"weekly-day-track\">" + lines + blocks + "</div>";
+      }).join("");
 
-    function goToToday() {
-      var t = getTodayWeekdayName();
-      if (days.indexOf(t) === -1) t = "Monday";
-      focusDay = t;
-      viewMode = "day";
-      saveCalendarView();
-      if (dayEl) dayEl.value = focusDay;
-      render();
-    }
+      gridEl.innerHTML =
+        "<div class=\"weekly-header-row\">" + dayHeader + "</div>" +
+        "<div class=\"weekly-all-day-row\">" + allDayRow + "</div>" +
+        "<div class=\"weekly-body-row\"><div class=\"weekly-time-col\">" + labels + "</div><div class=\"weekly-day-columns\">" + tracks + "</div></div>";
 
-    function bindWeekDayGridInteractions() {
       var removeButtons = gridEl.querySelectorAll(".weekly-event-remove-mini");
       for (var i = 0; i < removeButtons.length; i++) {
         removeButtons[i].addEventListener("click", function () {
@@ -1252,9 +1113,7 @@
           blockEl.addEventListener("pointerdown", function (e) {
             if (!e.target) return;
             if (e.target.closest(".weekly-event-remove-mini") || e.target.closest(".weekly-shift-btn")) return;
-            var id = blockEl.querySelector(".weekly-event-remove-mini")
-              ? blockEl.querySelector(".weekly-event-remove-mini").getAttribute("data-id")
-              : null;
+            var id = blockEl.querySelector(".weekly-event-remove-mini") ? blockEl.querySelector(".weekly-event-remove-mini").getAttribute("data-id") : null;
             if (!id) return;
 
             var events = getStoredWeeklyEvents();
@@ -1274,21 +1133,12 @@
             var dragStart = baseStart;
             var dragEnd = baseEnd;
             var startY = e.clientY;
-            var startX = e.clientX;
-            var pid = e.pointerId;
-            var dragMode = false;
             var active = true;
+            blockEl.classList.add("dragging");
+            if (blockEl.setPointerCapture && e.pointerId != null) blockEl.setPointerCapture(e.pointerId);
 
             function onMove(moveEvent) {
-              if (!active || moveEvent.pointerId !== pid) return;
-              var dy = moveEvent.clientY - startY;
-              var dx = moveEvent.clientX - startX;
-              if (!dragMode) {
-                if (Math.abs(dy) < DRAG_THRESHOLD_PX && Math.abs(dx) < DRAG_THRESHOLD_PX) return;
-                dragMode = true;
-                blockEl.classList.add("dragging");
-                if (blockEl.setPointerCapture && pid != null) blockEl.setPointerCapture(pid);
-              }
+              if (!active) return;
               var deltaPx = moveEvent.clientY - startY;
               var deltaMins = Math.round((deltaPx / hourHeight) * 60 / 15) * 15;
               var nextStart = baseStart + deltaMins;
@@ -1306,22 +1156,12 @@
               if (t) t.textContent = formatTimeRange(nextStart, Math.min(nextEnd, lastMinuteOfDay));
             }
 
-            function onUp() {
+            function onUp(upEvent) {
               if (!active) return;
               active = false;
+              blockEl.classList.remove("dragging");
               window.removeEventListener("pointermove", onMove);
               window.removeEventListener("pointerup", onUp);
-              window.removeEventListener("pointercancel", onUp);
-              blockEl.classList.remove("dragging");
-              try {
-                if (blockEl.releasePointerCapture && pid != null) blockEl.releasePointerCapture(pid);
-              } catch (errUp) {}
-
-              if (!dragMode) {
-                if (ev) openWeeklyDetail(ev);
-                return;
-              }
-
               var saveEnd = Math.min(dragEnd, lastMinuteOfDay);
               if (saveEnd <= dragStart) saveEnd = Math.min(dragStart + 15, lastMinuteOfDay);
               var updatedEvents = getStoredWeeklyEvents();
@@ -1339,179 +1179,10 @@
 
             window.addEventListener("pointermove", onMove);
             window.addEventListener("pointerup", onUp);
-            window.addEventListener("pointercancel", onUp);
           });
         })(draggableBlocks[b]);
       }
-
-      var allDayBlocks = gridEl.querySelectorAll(".weekly-all-day-event");
-      for (var ad = 0; ad < allDayBlocks.length; ad++) {
-        allDayBlocks[ad].addEventListener("click", function (e) {
-          if (e.target.closest(".weekly-shift-btn") || e.target.closest(".weekly-event-remove-mini")) return;
-          var rm = this.querySelector(".weekly-event-remove-mini");
-          if (!rm) return;
-          var aid = rm.getAttribute("data-id");
-          if (!aid) return;
-          var evs = getStoredWeeklyEvents();
-          for (var z = 0; z < evs.length; z++) {
-            if (evs[z] && evs[z].id === aid) {
-              openWeeklyDetail(evs[z]);
-              break;
-            }
-          }
-        });
-      }
     }
-
-    function render() {
-      if (days.indexOf(focusDay) === -1) {
-        focusDay = getTodayWeekdayName();
-        if (days.indexOf(focusDay) === -1) focusDay = "Monday";
-        saveCalendarView();
-      }
-
-      var events = getStoredWeeklyEvents();
-      var part = partitionWeeklyEvents(events);
-      var allDayByDay = part.allDayByDay;
-      var timedByDay = part.timedByDay;
-
-      updateViewToolbar();
-
-      gridEl.className = "weekly-calendar-grid weekly-view-" + viewMode;
-      gridEl.innerHTML = "";
-
-      var dayList = viewMode === "day" ? [focusDay] : days;
-      var dayHeader =
-        "<div class=\"weekly-time-col-header\"></div>" +
-        dayList
-          .map(function (d) {
-            var label = viewMode === "day" ? d : d.slice(0, 3);
-            return "<div class=\"weekly-day-header\">" + label + "</div>";
-          })
-          .join("");
-
-      var headerRowClass =
-        viewMode === "day" ? "weekly-header-row weekly-header-single" : "weekly-header-row";
-      var allDayRowClass =
-        viewMode === "day" ? "weekly-all-day-row weekly-all-day-single" : "weekly-all-day-row";
-      var dayColsClass = viewMode === "day" ? "weekly-day-columns is-single" : "weekly-day-columns";
-
-      var allDayRow =
-        "<div class=\"weekly-all-day-label\">all-day</div>" +
-        dayList
-          .map(function (d) {
-            var items = allDayByDay[d]
-              .map(function (slot) {
-                var ev = slot.event;
-                return (
-                  "<div class=\"weekly-all-day-event weekly-color-" +
-                  slot.color +
-                  "\">" +
-                  "<button type=\"button\" class=\"weekly-shift-btn weekly-shift-left\" data-id=\"" +
-                  safeText(ev.id) +
-                  "\" aria-label=\"Move event left\">&#x2039;</button>" +
-                  "<span class=\"weekly-all-day-title\">" +
-                  safeText(ev.title) +
-                  "</span>" +
-                  "<button type=\"button\" class=\"weekly-shift-btn weekly-shift-right\" data-id=\"" +
-                  safeText(ev.id) +
-                  "\" aria-label=\"Move event right\">&#x203A;</button>" +
-                  "<button type=\"button\" class=\"weekly-event-remove-mini\" data-id=\"" +
-                  safeText(ev.id) +
-                  "\" aria-label=\"Remove event\">×</button></div>"
-                );
-              })
-              .join("");
-            return (
-              "<div class=\"weekly-all-day-cell\">" +
-              (items || "<span class=\"weekly-empty muted\">—</span>") +
-              "</div>"
-            );
-          })
-          .join("");
-
-      var labels = "";
-      for (var h = startHour; h <= endHour; h++) {
-        labels += "<div class=\"weekly-hour-label\">" + hourLabel(h) + "</div>";
-      }
-
-      var tracks = dayList
-        .map(function (d) {
-          var lines = "";
-          for (var hh = startHour; hh <= endHour; hh++) {
-            lines += "<div class=\"weekly-hour-line\"></div>";
-          }
-
-          var blocks = timedByDay[d]
-            .map(function (slot) {
-              var startMins = startHour * 60;
-              var totalMins = (endHour - startHour + 1) * 60;
-              var top = ((slot.startMin - startMins) / 60) * hourHeight;
-              if (top < 0) top = 0;
-              var trackHeight = (totalMins / 60) * hourHeight;
-              var durationMin = Math.max(15, slot.endMin - slot.startMin);
-              var heightPx = Math.max(minTimedEventHeight, (durationMin / 60) * hourHeight - 2);
-              if (top + heightPx > trackHeight) heightPx = Math.max(minTimedEventHeight, trackHeight - top);
-              var title = safeText(slot.event.title);
-              var timeRange = formatTimeRange(slot.startMin, slot.endMin);
-              return (
-                "<div class=\"weekly-event-block weekly-color-" +
-                slot.color +
-                "\" style=\"top:" +
-                top +
-                "px;height:" +
-                heightPx +
-                "px\">" +
-                "<button type=\"button\" class=\"weekly-shift-btn weekly-shift-left\" data-id=\"" +
-                safeText(slot.event.id) +
-                "\" aria-label=\"Move event to previous day\">&#x2039;</button>" +
-                "<button type=\"button\" class=\"weekly-shift-btn weekly-shift-right\" data-id=\"" +
-                safeText(slot.event.id) +
-                "\" aria-label=\"Move event to next day\">&#x203A;</button>" +
-                "<div class=\"weekly-event-row\"><span class=\"weekly-event-time\">" +
-                safeText(timeRange) +
-                "</span>" +
-                "<button type=\"button\" class=\"weekly-event-remove-mini\" data-id=\"" +
-                safeText(slot.event.id) +
-                "\" aria-label=\"Remove event\">×</button></div>" +
-                "<div class=\"weekly-event-title\">" +
-                title +
-                "</div></div>"
-              );
-            })
-            .join("");
-
-          return "<div class=\"weekly-day-track\">" + lines + blocks + "</div>";
-        })
-        .join("");
-
-      gridEl.innerHTML =
-        "<div class=\"" +
-        headerRowClass +
-        "\">" +
-        dayHeader +
-        "</div>" +
-        "<div class=\"" +
-        allDayRowClass +
-        "\">" +
-        allDayRow +
-        "</div>" +
-        "<div class=\"weekly-body-row\"><div class=\"weekly-time-col\">" +
-        labels +
-        "</div><div class=\"" +
-        dayColsClass +
-        "\">" +
-        tracks +
-        "</div></div>";
-
-      bindWeekDayGridInteractions();
-    }
-
-    if (pillDay) pillDay.addEventListener("click", function () { setViewMode("day"); });
-    if (pillWeek) pillWeek.addEventListener("click", function () { setViewMode("week"); });
-    if (focusPrevBtn) focusPrevBtn.addEventListener("click", function () { focusDayStep(-1); });
-    if (focusNextBtn) focusNextBtn.addEventListener("click", function () { focusDayStep(1); });
-    if (todayBtnEl) todayBtnEl.addEventListener("click", goToToday);
 
     addBtn.addEventListener("click", function () {
       var day = dayEl.value;
@@ -1543,17 +1214,11 @@
         newEv.endTime = minutesToTime(eMin);
       }
 
-      if (instructionsEl && instructionsEl.value) {
-        var ins = instructionsEl.value.trim();
-        if (ins) newEv.instructions = ins.slice(0, 16000);
-      }
-
       events.push(newEv);
       setStoredWeeklyEvents(events);
       titleEl.value = "";
       startTimeEl.value = "";
       endTimeEl.value = "";
-      if (instructionsEl) instructionsEl.value = "";
       titleEl.focus();
       render();
     });
@@ -1570,57 +1235,9 @@
     } catch (e) {}
   }
 
-  var VALID_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-  var TIME_RE = /^([01]?\d|2[0-3]):[0-5]\d$/;
-
-  function normalizeTimeStr(s) {
-    if (!s || typeof s !== "string") return "";
-    var t = s.trim();
-    if (!TIME_RE.test(t)) return "";
-    var parts = t.split(":");
-    var h = parseInt(parts[0], 10);
-    var m = parseInt(parts[1], 10);
-    if (!Number.isFinite(h) || !Number.isFinite(m)) return "";
-    return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0");
-  }
-
-  /**
-   * Append AI meal-plan calendar rows to weekly planner storage (nutriplanner_weekly_events).
-   * @param {Array<{day:string,title:string,startTime?:string,endTime?:string,instructions?:string}>} events
-   * @returns {number} count added
-   */
-  window.importNutriplannerWeeklyPlanEvents = function (events) {
-    if (!Array.isArray(events)) return 0;
-    var list = getStoredWeeklyEvents();
-    var added = 0;
-    for (var i = 0; i < events.length; i++) {
-      var ev = events[i];
-      if (!ev || typeof ev !== "object") continue;
-      var day = String(ev.day || "").trim();
-      if (VALID_DAYS.indexOf(day) === -1) continue;
-      var title = String(ev.title || "").trim();
-      if (!title) continue;
-      var row = {
-        id: String(Date.now()) + "-" + Math.random().toString(36).slice(2, 9),
-        day: day,
-        title: title.slice(0, 240),
-      };
-      var st = normalizeTimeStr(ev.startTime);
-      var et = normalizeTimeStr(ev.endTime);
-      if (st) row.startTime = st;
-      if (et) row.endTime = et;
-      if (ev.instructions != null && String(ev.instructions).trim() !== "") {
-        row.instructions = String(ev.instructions).trim().slice(0, 16000);
-      }
-      list.push(row);
-      added++;
-    }
-    setStoredWeeklyEvents(list);
-    return added;
-  };
-
   document.addEventListener("DOMContentLoaded", function () {
     function startMain() {
+      setYear();
       initTargetsPage();
       initDaylogPage();
       initWeeklyPlannerPage();
