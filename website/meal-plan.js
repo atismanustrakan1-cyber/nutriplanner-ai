@@ -1,5 +1,6 @@
 (function () {
   var DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  var GROCERY_LIST_STORAGE_KEY = "nutriplanner_grocery_list";
   var SLOT_DEFAULTS = {
     breakfast: { start: "07:30", end: "08:00" },
     lunch: { start: "12:15", end: "13:00" },
@@ -113,8 +114,10 @@
 
   function buildRequestContext(baseContext, customization) {
     var extra = String(customization || "").trim();
-    if (!extra) return baseContext;
-    return baseContext + "\n\nWeekly customization request:\n" + extra;
+    var quantityRule =
+      "Shopping quantity format rule: every shopping row must use a real measurement (examples: 200 g, 1.5 lb, 2 cups, 1 tbsp, 500 ml, 1 loaf). Do not use generic '1 unit' or 'units'.";
+    if (!extra) return baseContext + "\n\n" + quantityRule;
+    return baseContext + "\n\n" + quantityRule + "\n\nWeekly customization request:\n" + extra;
   }
 
   function getStoredSettings() {
@@ -294,6 +297,7 @@
       if (!row || typeof row !== "object") continue;
       var bits = [];
       if (row.item) bits.push(String(row.item));
+      if (row.quantity != null && String(row.quantity).trim() !== "") bits.push(String(row.quantity).trim());
       if (row.approx_price_usd != null && Number.isFinite(Number(row.approx_price_usd))) {
         bits.push("~$" + Number(row.approx_price_usd).toFixed(2));
       }
@@ -324,9 +328,34 @@
         title = slot.charAt(0).toUpperCase() + slot.slice(1) + ": " + title;
       }
       var recipe = String(m.recipe || "").trim();
+      var servings = Number(m.servings);
+      var servingsLine = Number.isFinite(servings) && servings > 0 ? "Recommended servings: " + servings + "\n" : "";
+      var caloriesLine = Number.isFinite(Number(m.calories_estimate)) && Number(m.calories_estimate) > 0
+        ? "Estimated meal calories: " + Math.round(Number(m.calories_estimate)) + " kcal\n"
+        : "";
+      var macrosLine = "";
+      if (m.macros && typeof m.macros === "object") {
+        var mkcal = Number(m.macros.calories);
+        var mp = Number(m.macros.protein_g);
+        var mc = Number(m.macros.carbs_g);
+        var mf = Number(m.macros.fat_g);
+        if (Number.isFinite(mkcal) || Number.isFinite(mp) || Number.isFinite(mc) || Number.isFinite(mf)) {
+          macrosLine =
+            "Macros: " +
+            (Number.isFinite(mkcal) ? Math.round(mkcal) + " kcal" : "— kcal") +
+            " · P " +
+            (Number.isFinite(mp) ? mp.toFixed(1) : "—") +
+            "g · C " +
+            (Number.isFinite(mc) ? mc.toFixed(1) : "—") +
+            "g · F " +
+            (Number.isFinite(mf) ? mf.toFixed(1) : "—") +
+            "g\n";
+        }
+      }
       var shop = formatShoppingLines(m.shopping);
       var instr = "";
-      if (recipe) instr = recipe;
+      if (recipe) instr = servingsLine + caloriesLine + macrosLine + "\n" + recipe;
+      else instr = servingsLine + caloriesLine + macrosLine;
       if (shop) {
         instr = instr ? instr + "\n\n— Shopping —\n" + shop : "— Shopping —\n" + shop;
       }
@@ -341,19 +370,31 @@
     if (!Array.isArray(shopping) || shopping.length === 0) {
       return "<p class=\"muted\">No separate shopping list for this meal.</p>";
     }
+    function placeLabelFromWhere(whereRaw) {
+      var raw = String(whereRaw || "").trim();
+      if (!raw) return "Store";
+      var noUrl = raw.replace(/https?:\/\/[^\s]+/gi, "").trim();
+      if (!noUrl) return "Store";
+      var noDirections = noUrl.replace(/\bDirections?\b\s*:?\s*$/i, "").trim();
+      if (!noDirections) return "Store";
+      var firstChunk = noDirections.split(/[·|]/)[0] || "";
+      var placeName = firstChunk.split(",")[0] || firstChunk;
+      placeName = placeName.trim();
+      return placeName || "Store";
+    }
+
     function renderWhereBuy(whereRaw) {
       var raw = String(whereRaw || "").trim();
       if (!raw) return "";
       var match = raw.match(/https?:\/\/[^\s]+/i);
-      if (!match) return esc(raw);
+      if (!match) return esc(placeLabelFromWhere(raw));
       var url = match[0];
-      var left = raw.replace(url, "").replace(/[\s\-|:]+$/, "").trim();
-      var label = left ? esc(left) + " " : "";
       return (
-        label +
         '<a class="meal-plan-directions-link" href="' +
         esc(url) +
-        '" target="_blank" rel="noreferrer noopener">Directions</a>'
+        '" target="_blank" rel="noreferrer noopener">' +
+        esc(placeLabelFromWhere(raw)) +
+        "</a>"
       );
     }
 
@@ -361,42 +402,42 @@
       .map(function (row) {
         if (!row || typeof row !== "object") return "";
         var item = esc(row.item);
-        var price =
-          row.approx_price_usd != null && Number.isFinite(Number(row.approx_price_usd))
-            ? "$" + Number(row.approx_price_usd).toFixed(2)
-            : "—";
+        var qty = row.quantity != null && String(row.quantity).trim() !== "" ? esc(row.quantity) : "as needed";
         var where = renderWhereBuy(row.where_buy || row.where || "");
         return (
-          "<tr><td>" +
-          item +
-          "</td><td>" +
-          price +
-          "</td><td>" +
-          where +
-          "</td></tr>"
+          "<div class=\"meal-plan-shop-row\">" +
+          "<span class=\"meal-plan-shop-item\">" + item + "</span>" +
+          "<span class=\"meal-plan-shop-price\">" + qty + "</span>" +
+          "<span class=\"meal-plan-shop-where\">" + where + "</span>" +
+          "</div>"
         );
       })
       .join("");
-    return (
-      "<table class=\"meal-plan-shop-table\"><thead><tr><th>Item</th><th>Est. price</th><th>Where to buy</th></tr></thead><tbody>" +
-      rows +
-      "</tbody></table>"
-    );
+    return "<div class=\"meal-plan-shop-list\">" + rows + "</div>";
   }
 
   function renderWhereBuyWithDirections(whereRaw) {
     var raw = String(whereRaw || "").trim();
     if (!raw) return "";
     var match = raw.match(/https?:\/\/[^\s]+/i);
-    if (!match) return esc(raw);
+    function placeLabelFromWhere(rawText) {
+      var noUrl = String(rawText || "").replace(/https?:\/\/[^\s]+/gi, "").trim();
+      if (!noUrl) return "Store";
+      var noDirections = noUrl.replace(/\bDirections?\b\s*:?\s*$/i, "").trim();
+      if (!noDirections) return "Store";
+      var firstChunk = noDirections.split(/[·|]/)[0] || "";
+      var placeName = firstChunk.split(",")[0] || firstChunk;
+      placeName = placeName.trim();
+      return placeName || "Store";
+    }
+    if (!match) return esc(placeLabelFromWhere(raw));
     var url = match[0];
-    var left = raw.replace(url, "").replace(/[\s\-|:]+$/, "").trim();
-    var label = left ? esc(left) + " " : "";
     return (
-      label +
       '<a class="meal-plan-directions-link" href="' +
       esc(url) +
-      '" target="_blank" rel="noreferrer noopener">Directions</a>'
+      '" target="_blank" rel="noreferrer noopener">' +
+      esc(placeLabelFromWhere(raw)) +
+      "</a>"
     );
   }
 
@@ -408,6 +449,35 @@
         ? "<span class=\"meal-plan-meal-cost\">~$" + Number(m.meal_cost_usd).toFixed(2) + "</span>"
         : "";
     var recipe = esc(m.recipe || "").replace(/\n/g, "<br />");
+    var servings = Number(m.servings);
+    var servingsHtml = Number.isFinite(servings) && servings > 0
+      ? '<div class="meal-plan-meal-servings muted">Recommended servings: ' + servings + "</div>"
+      : "";
+    var mealCalories = Number(m.calories_estimate);
+    var caloriesHtml = Number.isFinite(mealCalories) && mealCalories > 0
+      ? '<div class="meal-plan-meal-servings muted">Estimated meal calories: ' + Math.round(mealCalories) + " kcal</div>"
+      : "";
+    var macrosHtml = "";
+    if (m.macros && typeof m.macros === "object") {
+      var mkcal = Number(m.macros.calories);
+      var mp = Number(m.macros.protein_g);
+      var mc = Number(m.macros.carbs_g);
+      var mf = Number(m.macros.fat_g);
+      if (Number.isFinite(mkcal) || Number.isFinite(mp) || Number.isFinite(mc) || Number.isFinite(mf)) {
+        macrosHtml =
+          '<div class="meal-plan-meal-macros muted">' +
+          "Macros: " +
+          (Number.isFinite(mkcal) ? Math.round(mkcal) + " kcal" : "— kcal") +
+          " · P " +
+          (Number.isFinite(mp) ? mp.toFixed(1) : "—") +
+          "g · C " +
+          (Number.isFinite(mc) ? mc.toFixed(1) : "—") +
+          "g · F " +
+          (Number.isFinite(mf) ? mf.toFixed(1) : "—") +
+          'g <span class="meal-plan-usda-badge">USDA</span>' +
+          "</div>";
+      }
+    }
     return (
       "<article class=\"meal-plan-meal-card\">" +
       "<header class=\"meal-plan-meal-head\"><span class=\"meal-plan-slot\">" +
@@ -417,6 +487,9 @@
       "</h3>" +
       cost +
       "</header>" +
+      servingsHtml +
+      caloriesHtml +
+      macrosHtml +
       "<div class=\"meal-plan-recipe\"><strong>How to make it</strong><p>" +
       recipe +
       "</p></div>" +
@@ -426,7 +499,58 @@
     );
   }
 
+  function parseNearestStoreFromMeals(meals) {
+    if (!Array.isArray(meals)) return null;
+    for (var i = 0; i < meals.length; i++) {
+      var shopping = Array.isArray(meals[i] && meals[i].shopping) ? meals[i].shopping : [];
+      for (var j = 0; j < shopping.length; j++) {
+        var raw = String((shopping[j] && (shopping[j].where_buy || shopping[j].where)) || "").trim();
+        if (!raw) continue;
+        var match = raw.match(/https?:\/\/[^\s]+/i);
+        if (!match) continue;
+        var url = match[0];
+        var noUrl = raw.replace(url, "").trim();
+        var firstChunk = noUrl.split(/[·|]/)[0] || "";
+        var placeName = firstChunk.split(",")[0].trim() || "Store";
+        return { name: placeName, url: url };
+      }
+    }
+    return null;
+  }
+
   function buildWeeklyGroceryRows(meals) {
+    function normalizeMeasureUnit(unitRaw) {
+      var u = String(unitRaw || "").trim().toLowerCase().replace(/\./g, "");
+      if (!u) return "";
+      if (u === "lbs" || u === "pounds" || u === "pound") return "lb";
+      if (u === "ounces" || u === "ounce") return "oz";
+      if (u === "grams" || u === "gram") return "g";
+      if (u === "kilograms" || u === "kilogram" || u === "kgs") return "kg";
+      if (u === "milliliters" || u === "milliliter" || u === "millilitres" || u === "millilitre") return "ml";
+      if (u === "liters" || u === "liter" || u === "litres" || u === "litre") return "l";
+      if (u === "tablespoons" || u === "tablespoon" || u === "tbs" || u === "tbsp") return "tbsp";
+      if (u === "teaspoons" || u === "teaspoon" || u === "tsp") return "tsp";
+      if (u === "cups" || u === "cup") return "cup";
+      if (u === "pieces" || u === "piece" || u === "pcs" || u === "pc") return "pc";
+      return u;
+    }
+
+    function formatTotalQuantity(v) {
+      var qtyParts = [];
+      var units = Object.keys(v.quantityByUnit);
+      for (var i = 0; i < units.length; i++) {
+        var u = units[i];
+        var n = v.quantityByUnit[u];
+        if (!Number.isFinite(n) || n <= 0) continue;
+        var rounded = Math.round(n * 100) / 100;
+        qtyParts.push(String(rounded) + " " + u);
+      }
+      if (v.quantityTextList.length) {
+        qtyParts = qtyParts.concat(v.quantityTextList);
+      }
+      return qtyParts.length ? qtyParts.join(" + ") : "as needed";
+    }
+
     var map = {};
     if (!Array.isArray(meals)) return [];
     for (var i = 0; i < meals.length; i++) {
@@ -444,6 +568,8 @@
             approx_price_usd: 0,
             whereList: {},
             count: 0,
+            quantityByUnit: {},
+            quantityTextList: [],
           };
         }
         var priceNum = Number(row.approx_price_usd);
@@ -452,6 +578,22 @@
         }
         var where = String(row.where_buy || row.where || "").trim();
         if (where) map[key].whereList[where] = true;
+        var qtyRaw = String(row.quantity || row.qty || "").trim();
+        if (qtyRaw) {
+          var qtyMatch = qtyRaw.match(/^(\d+(?:\.\d+)?)\s*([a-zA-Z]+(?:\s*[a-zA-Z]+)*)$/);
+          if (qtyMatch) {
+            var qtyNum = Number(qtyMatch[1]);
+            var qtyUnit = normalizeMeasureUnit(qtyMatch[2]);
+            if (Number.isFinite(qtyNum) && qtyNum > 0 && qtyUnit) {
+              if (!map[key].quantityByUnit[qtyUnit]) map[key].quantityByUnit[qtyUnit] = 0;
+              map[key].quantityByUnit[qtyUnit] += qtyNum;
+            } else if (map[key].quantityTextList.indexOf(qtyRaw) === -1) {
+              map[key].quantityTextList.push(qtyRaw);
+            }
+          } else if (map[key].quantityTextList.indexOf(qtyRaw) === -1) {
+            map[key].quantityTextList.push(qtyRaw);
+          }
+        }
         map[key].count++;
       }
     }
@@ -461,7 +603,8 @@
         return {
           item: v.item,
           approx_price_usd: v.approx_price_usd,
-          where_buy: Object.keys(v.whereList).join(" / "),
+          where_buy: Object.keys(v.whereList)[0] || "",
+          quantity: formatTotalQuantity(v),
           count: v.count,
         };
       })
@@ -484,28 +627,38 @@
     }
     if (!rows.length) {
       listEl.innerHTML = "<p class=\"muted\">No grocery items were returned in this plan.</p>";
-      return;
+      return [];
     }
     var body = rows
       .map(function (r) {
-        var where = r.where_buy
-          ? "<span class=\"meal-plan-grocery-where\">" + renderWhereBuyWithDirections(r.where_buy) + "</span>"
-          : "—";
+        var where = r.where_buy ? renderWhereBuyWithDirections(r.where_buy) : "—";
         return (
           "<tr><td>" +
           esc(r.item) +
-          "</td><td>$" +
-          Number(r.approx_price_usd || 0).toFixed(2) +
           "</td><td>" +
+          esc(r.quantity || "as needed") +
+          "</td><td><span class=\"meal-plan-grocery-where\">" +
           where +
+          "</span></td><td>$" +
+          Number(r.approx_price_usd || 0).toFixed(2) +
           "</td></tr>"
         );
       })
       .join("");
     listEl.innerHTML =
-      "<table class=\"meal-plan-grocery-table\"><thead><tr><th>Item</th><th>Est. total</th><th>Where to buy</th></tr></thead><tbody>" +
+      "<table class=\"meal-plan-grocery-table\"><thead><tr><th>Item</th><th>Quantity</th><th>Location</th><th>Est. total</th></tr></thead><tbody>" +
       body +
       "</tbody></table>";
+    return rows;
+  }
+
+  function saveImportedGroceryList(rows) {
+    try {
+      localStorage.setItem(GROCERY_LIST_STORAGE_KEY, JSON.stringify(Array.isArray(rows) ? rows : []));
+    } catch (_e) {}
+    if (typeof window.scheduleNutriplannerCloudSave === "function") {
+      window.scheduleNutriplannerCloudSave();
+    }
   }
 
   function renderResults(data) {
@@ -513,11 +666,35 @@
     var daysEl = document.getElementById("mealPlanDays");
     var totalEl = document.getElementById("mealPlanTotalCost");
     var noteEl = document.getElementById("mealPlanBudgetNote");
+    var nearestEl = document.getElementById("mealPlanNearestStore");
     if (!resultsEl || !daysEl) return;
+    var contextData = getMealPlanContextData();
+    var weeklyBudgetNum = Number(contextData.weeklyBudget);
+    var weeklySpentNum = Number(contextData.weeklySpent);
+    var hasBudget = Number.isFinite(weeklyBudgetNum) && weeklyBudgetNum >= 0;
+    var hasSpent = Number.isFinite(weeklySpentNum) && weeklySpentNum >= 0;
+    var remainingBudget = hasBudget ? Math.max(0, weeklyBudgetNum - (hasSpent ? weeklySpentNum : 0)) : null;
 
     if (data.total_estimated_usd != null && Number.isFinite(Number(data.total_estimated_usd))) {
       if (totalEl) {
-        totalEl.textContent = "Estimated week ingredients: ~$" + Number(data.total_estimated_usd).toFixed(2);
+        var totalCost = Number(data.total_estimated_usd);
+        var baseText = "Estimated week ingredients: ~$" + totalCost.toFixed(2);
+        if (remainingBudget != null) {
+          var diff = Math.round((remainingBudget - totalCost) * 100) / 100;
+          if (diff >= 0) {
+            baseText += " (within remaining budget by $" + diff.toFixed(2) + ")";
+          } else {
+            baseText += " (over remaining budget by $" + Math.abs(diff).toFixed(2) + ")";
+          }
+        } else if (hasBudget) {
+          var fullDiff = Math.round((weeklyBudgetNum - totalCost) * 100) / 100;
+          if (fullDiff >= 0) {
+            baseText += " (within weekly budget by $" + fullDiff.toFixed(2) + ")";
+          } else {
+            baseText += " (over weekly budget by $" + Math.abs(fullDiff).toFixed(2) + ")";
+          }
+        }
+        totalEl.textContent = baseText;
       }
     } else if (totalEl) {
       totalEl.textContent = "";
@@ -528,7 +705,24 @@
     }
 
     var meals = Array.isArray(data.meals) ? data.meals : [];
-    renderWeeklyGrocery(meals);
+    var groceryRows = renderWeeklyGrocery(meals);
+    if (groceryRows && groceryRows.length) {
+      saveImportedGroceryList(groceryRows);
+    }
+    if (nearestEl) {
+      var nearest = parseNearestStoreFromMeals(meals);
+      if (nearest && nearest.url) {
+        nearestEl.innerHTML =
+          "Nearest grocery store: " +
+          '<a class="meal-plan-directions-link" href="' +
+          esc(nearest.url) +
+          '" target="_blank" rel="noreferrer noopener">' +
+          esc(nearest.name) +
+          "</a>";
+      } else {
+        nearestEl.textContent = "";
+      }
+    }
     var byDay = {};
     DAYS.forEach(function (d) {
       byDay[d] = [];
@@ -549,14 +743,49 @@
       });
     });
 
+    var targetCaloriesNum = Number(contextData.targetCalories);
+    var hasCalorieTarget = Number.isFinite(targetCaloriesNum) && targetCaloriesNum > 0;
+    function mealCaloriesValue(meal) {
+      var est = Number(meal && meal.calories_estimate);
+      if (Number.isFinite(est) && est > 0) return est;
+      var macroCal = Number(meal && meal.macros && meal.macros.calories);
+      var servings = Number(meal && meal.servings);
+      if (Number.isFinite(macroCal) && macroCal > 0) {
+        if (Number.isFinite(servings) && servings > 0) return macroCal * servings;
+        return macroCal;
+      }
+      return 0;
+    }
+
     var html = DAYS.map(function (d) {
       var list = byDay[d];
       if (!list.length) return "";
       var cards = list.map(renderMealCard).join("");
+      var totalForDay = list.reduce(function (sum, meal) {
+        return sum + mealCaloriesValue(meal);
+      }, 0);
+      var dayMeta = "";
+      if (hasCalorieTarget) {
+        var diff = Math.round(totalForDay) - Math.round(targetCaloriesNum);
+        var sign = diff >= 0 ? "+" : "";
+        dayMeta =
+          '<div class="meal-plan-day-meta muted">~' +
+          Math.round(totalForDay) +
+          " kcal vs target " +
+          Math.round(targetCaloriesNum) +
+          " kcal (" +
+          sign +
+          diff +
+          ")</div>";
+      } else {
+        dayMeta = '<div class="meal-plan-day-meta muted">~' + Math.round(totalForDay) + " kcal</div>";
+      }
       return (
         "<section class=\"meal-plan-day-block panel\"><h2 class=\"meal-plan-day-title\">" +
         esc(d) +
-        "</h2><div class=\"meal-plan-meal-list\">" +
+        "</h2>" +
+        dayMeta +
+        "<div class=\"meal-plan-meal-list\">" +
         cards +
         "</div></section>"
       );
@@ -573,6 +802,7 @@
     var genBtn = document.getElementById("mealPlanGenerate");
     var statusEl = document.getElementById("mealPlanStatus");
     var importBtn = document.getElementById("mealPlanImportPlanner");
+    var importGroceryBtn = document.getElementById("mealPlanImportGrocery");
     var importStatus = document.getElementById("mealPlanImportStatus");
     var customPromptEl = document.getElementById("mealPlanCustomPrompt");
 
@@ -670,6 +900,22 @@
         if (importStatus) {
           importStatus.textContent = n ? "Added " + n + " events. Open Weekly Planner to view or edit." : "Nothing imported (check day names).";
         }
+      });
+    }
+
+    if (importGroceryBtn) {
+      importGroceryBtn.addEventListener("click", function () {
+        if (!lastPlan) {
+          if (importStatus) importStatus.textContent = "Generate a plan first.";
+          return;
+        }
+        var rows = buildWeeklyGroceryRows(Array.isArray(lastPlan.meals) ? lastPlan.meals : []);
+        if (!rows.length) {
+          if (importStatus) importStatus.textContent = "No grocery rows to import.";
+          return;
+        }
+        saveImportedGroceryList(rows);
+        if (importStatus) importStatus.textContent = "Imported grocery list. Open Grocery List page to view.";
       });
     }
   }

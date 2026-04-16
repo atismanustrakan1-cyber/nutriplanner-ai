@@ -4,6 +4,7 @@ var LS_TARGETS = "nutriplanner_targets";
 var LS_MEALS = "nutriplanner_meals";
 var LS_SETTINGS = "nutriplanner_settings";
 var LS_WEEKLY = "nutriplanner_weekly_events";
+var LS_GROCERY = "nutriplanner_grocery_list";
 
 function getRedirectUrl() {
   try {
@@ -59,7 +60,7 @@ function friendlyAuthError(err) {
 }
 
 function clearLocalNutriData() {
-  [LS_TARGETS, LS_MEALS, LS_SETTINGS, LS_WEEKLY].forEach(function (k) {
+  [LS_TARGETS, LS_MEALS, LS_SETTINGS, LS_WEEKLY, LS_GROCERY].forEach(function (k) {
     try {
       localStorage.removeItem(k);
     } catch (e) {}
@@ -81,7 +82,7 @@ function setLocalFromCloudValue(lsKey, val) {
 async function loadUserAppData(client, userId) {
   var r = await client
     .from("user_app_data")
-    .select("targets, meals, settings, weekly_events")
+    .select("targets, meals, settings, weekly_events, grocery_list")
     .eq("user_id", userId)
     .maybeSingle();
   if (r.error) throw r.error;
@@ -94,6 +95,7 @@ async function loadUserAppData(client, userId) {
   setLocalFromCloudValue(LS_MEALS, d.meals);
   setLocalFromCloudValue(LS_SETTINGS, d.settings);
   setLocalFromCloudValue(LS_WEEKLY, d.weekly_events);
+  setLocalFromCloudValue(LS_GROCERY, d.grocery_list);
 }
 
 function parseLocalKey(key) {
@@ -116,6 +118,7 @@ async function saveUserAppData(client) {
     meals: parseLocalKey(LS_MEALS),
     settings: parseLocalKey(LS_SETTINGS),
     weekly_events: parseLocalKey(LS_WEEKLY),
+    grocery_list: parseLocalKey(LS_GROCERY),
     updated_at: new Date().toISOString(),
   };
   var up = await client.from("user_app_data").upsert(payload, { onConflict: "user_id" });

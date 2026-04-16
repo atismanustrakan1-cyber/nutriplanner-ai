@@ -871,7 +871,14 @@ main > .page-main + .hero { padding: 42px 0 48px; }
 @media (max-width: 700px) { .daylog-grid { grid-template-columns: 1fr; } }
 .daylog-add-col { display: flex; flex-direction: column; gap: 16px; min-height: 0; }
 .daylog-add-col .food-search-panel { flex: 1; min-height: 200px; display: flex; flex-direction: column; }
-.daylog-add-col .food-search-results { margin-top: 0; }
+.daylog-add-col .food-search-results {
+  margin-top: 0;
+  flex: 0 0 auto;
+  height: 320px;
+  max-height: 320px;
+  min-height: 0;
+  overflow-y: auto;
+}
 .daylog-progress-col { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
 .progress-panel-actions { margin: 0 0 4px; }
 .daylog-col-spacer { min-height: 2.25rem; padding: 0; margin: 0 0 4px; visibility: hidden; line-height: 0; }
@@ -1629,7 +1636,6 @@ main > .page-main + .hero { padding: 42px 0 48px; }
   color: var(--wp-fg);
 }
 .weekly-planner-page .sidebar {
-  background: rgba(13, 15, 20, 0.94);
   border-right-color: var(--wp-border);
 }
 .weekly-planner-page .title { color: var(--wp-fg); }
@@ -1833,8 +1839,65 @@ main > .page-main + .hero { padding: 42px 0 48px; }
   font-size: 0.9rem;
   line-height: 1.55;
   color: var(--wp-fg);
-  white-space: pre-wrap;
+  white-space: normal;
   word-break: break-word;
+}
+.weekly-detail-empty,
+.weekly-detail-text {
+  margin: 0;
+  color: var(--wp-fg);
+}
+.weekly-detail-section + .weekly-detail-section {
+  margin-top: 14px;
+}
+.weekly-detail-section-title {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--wp-muted);
+}
+.weekly-detail-steps {
+  margin: 0;
+  padding-left: 18px;
+}
+.weekly-detail-steps li + li {
+  margin-top: 6px;
+}
+.weekly-detail-shopping-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.weekly-detail-shopping-row {
+  display: grid;
+  grid-template-columns: 1.2fr auto 1.2fr;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--wp-border);
+  border-radius: 10px;
+  padding: 9px 10px;
+  background: var(--wp-pill-bg);
+}
+.weekly-detail-shopping-item {
+  font-weight: 600;
+}
+.weekly-detail-shopping-price {
+  color: var(--wp-muted);
+  white-space: nowrap;
+}
+.weekly-detail-shopping-where {
+  text-align: right;
+  color: var(--wp-muted);
+}
+@media (max-width: 640px) {
+  .weekly-detail-shopping-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .weekly-detail-shopping-where {
+    text-align: left;
+  }
 }
 
 .weekly-clear-confirm-dialog {
@@ -2031,9 +2094,10 @@ main > .page-main + .hero { padding: 42px 0 48px; }
   right: 4px;
   min-height: 44px;
   border-radius: 8px;
-  padding: 4px 6px;
+  padding: 5px 6px 6px;
   font-size: 0.75rem;
   overflow: hidden;
+  box-sizing: border-box;
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
   cursor: grab;
 }
@@ -2071,11 +2135,15 @@ main > .page-main + .hero { padding: 42px 0 48px; }
 .weekly-event-block .weekly-event-title { padding: 0 14px; }
 .weekly-event-time { font-weight: 600; font-size: 0.7rem; color: var(--wp-fg); }
 .weekly-event-title {
-  font-size: 0.85rem;
-  line-height: 1.2;
-  margin-top: 2px;
+  font-size: 0.8rem;
+  line-height: 1.15;
+  margin-top: 3px;
   font-weight: 600;
   color: var(--wp-fg);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .weekly-event-remove-mini {
   border: 0;
@@ -2662,14 +2730,14 @@ main > .page-main + .hero { padding: 42px 0 48px; }
 }
 .meal-plan-content-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.85fr) minmax(340px, 1fr);
+  grid-template-columns: minmax(0, 2.2fr) minmax(250px, 0.75fr);
   gap: 22px;
   align-items: start;
 }
 .meal-plan-grocery-card {
   position: sticky;
   top: 12px;
-  padding: 18px 18px 16px;
+  padding: 16px 14px 14px;
 }
 .meal-plan-grocery-title {
   margin: 0 0 6px;
@@ -2688,12 +2756,12 @@ main > .page-main + .hero { padding: 42px 0 48px; }
 .meal-plan-grocery-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.8125rem;
+  font-size: 0.76rem;
 }
 .meal-plan-grocery-table th,
 .meal-plan-grocery-table td {
   border: 1px solid var(--border);
-  padding: 7px 8px;
+  padding: 6px 7px;
   text-align: left;
   vertical-align: top;
 }
@@ -2726,6 +2794,11 @@ main > .page-main + .hero { padding: 42px 0 48px; }
   letter-spacing: -0.02em;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--border);
+}
+.meal-plan-day-meta {
+  margin: -4px 0 12px;
+  font-size: 0.78rem;
+  line-height: 1.35;
 }
 .meal-plan-meal-list {
   display: flex;
@@ -2764,6 +2837,27 @@ main > .page-main + .hero { padding: 42px 0 48px; }
   font-weight: 600;
   color: var(--fg-soft);
 }
+.meal-plan-meal-servings {
+  margin-top: 6px;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+.meal-plan-meal-macros {
+  margin-top: 6px;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+.meal-plan-usda-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+}
 .meal-plan-recipe,
 .meal-plan-shop {
   margin-top: 10px;
@@ -2798,6 +2892,122 @@ main > .page-main + .hero { padding: 42px 0 48px; }
   font-weight: 600;
   color: var(--muted);
 }
+.meal-plan-shop-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+.meal-plan-shop-row {
+  display: grid;
+  grid-template-columns: 1.2fr auto 1.1fr;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.meal-plan-shop-item {
+  font-weight: 600;
+}
+.meal-plan-shop-price {
+  color: var(--fg-soft);
+  white-space: nowrap;
+}
+.meal-plan-shop-where {
+  text-align: right;
+}
+
+/* ----- Grocery list page ----- */
+.grocery-list-page .page-main {
+  padding-top: 20px;
+}
+.grocery-list-page {
+  background: var(--bg) !important;
+}
+.grocery-list-page .top-auth-bar .top-auth-login {
+  background: var(--panel) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.grocery-list-page .app-content {
+  background: var(--bg) !important;
+}
+html:has(body.grocery-list-page) {
+  background: var(--bg) !important;
+}
+.grocery-list-page .container {
+  max-width: 760px;
+}
+.grocery-list-card {
+  max-width: 700px;
+  margin: 0;
+}
+.grocery-list-page .page-header {
+  max-width: 700px;
+  margin: 0 auto;
+}
+.grocery-list-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 8px 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.grocery-list-toolbar-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-start;
+}
+.grocery-list-toolbar #groceryStatus {
+  width: 100%;
+  text-align: left;
+}
+.grocery-list-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 180px);
+  gap: 10px 12px;
+  align-items: end;
+  margin-bottom: 14px;
+}
+.grocery-list-form label:nth-child(3) {
+  grid-column: 1 / -1;
+}
+.grocery-list-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+.grocery-list-form input {
+  width: 100%;
+  min-height: 40px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--field-bg);
+  color: var(--fg);
+  padding: 9px 11px;
+  font: inherit;
+}
+.grocery-list-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.grocery-add-btn {
+  min-height: 40px;
+  padding: 0 16px;
+  white-space: nowrap;
+  justify-self: start;
+}
+.grocery-delete-item-btn {
+  white-space: nowrap;
+}
 
 [data-theme="light"] .meal-plan-setup-card {
   background: #fff;
@@ -2815,6 +3025,12 @@ main > .page-main + .hero { padding: 42px 0 48px; }
 [data-theme="light"] .meal-plan-meal-card {
   background: #fafafa;
 }
+[data-theme="light"] .meal-plan-shop-row {
+  background: #fff;
+}
+[data-theme="light"] .grocery-list-form input {
+  background: #fff;
+}
 [data-theme="light"] .meal-plan-intro a,
 [data-theme="light"] .meal-plan-params-hint a {
   color: #0071e3;
@@ -2824,6 +3040,34 @@ main > .page-main + .hero { padding: 42px 0 48px; }
 }
 
 @media (max-width: 560px) {
+  .grocery-list-card {
+    max-width: 100%;
+  }
+  .grocery-list-toolbar {
+    justify-content: stretch;
+  }
+  .grocery-list-toolbar-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+  .grocery-list-toolbar #groceryStatus {
+    width: 100%;
+    text-align: left;
+  }
+  .grocery-list-form {
+    grid-template-columns: 1fr;
+  }
+  .grocery-add-btn {
+    width: auto;
+  }
+  .meal-plan-shop-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .meal-plan-shop-where {
+    text-align: left;
+  }
   .meal-plan-detail-row {
     grid-template-columns: 1fr;
     gap: 4px;

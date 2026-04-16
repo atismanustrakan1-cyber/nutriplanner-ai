@@ -31,6 +31,7 @@
         <a href="targets.html">Set Targets</a>
         <a href="daylog.html">Day Log</a>
         <a href="weekly-planner.html">Weekly Planner</a>
+        <a href="grocery-list.html">Grocery List</a>
         <a href="meal-plan.html">AI Meal Plan</a>
         <a href="settings.html">Settings</a>
         <span id="userGreeting" class="user-greeting"></span>
@@ -86,6 +87,14 @@
           <label class="settings-label" for="settingsShoppingLocation">Shopping area (for AI meal plans)</label>
           <input type="text" id="settingsShoppingLocation" class="settings-input" placeholder="e.g. Orlando, FL or 32826 — neighborhood" maxlength="200" autocomplete="address-level2" />
           <p class="settings-hint muted">City, ZIP, or neighborhood. The AI uses this to suggest realistic nearby stores in each ingredient’s “where to buy” line.</p>
+        </div>
+        <div class="settings-group">
+          <label class="settings-label" for="settingsUnitSystem">Unit system</label>
+          <select id="settingsUnitSystem" class="settings-select" aria-label="Unit system">
+            <option value="metric">Metric (kg, cm)</option>
+            <option value="imperial">Imperial (lb, in)</option>
+          </select>
+          <p class="settings-hint muted">Applied across target inputs and calculations throughout the app.</p>
         </div>
       </div>
 

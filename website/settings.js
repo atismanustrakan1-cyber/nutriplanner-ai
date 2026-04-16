@@ -10,7 +10,8 @@
     weeklyBudget: "",
     weeklySpent: "",
     stockNotes: "",
-    shoppingLocation: ""
+    shoppingLocation: "",
+    unitSystem: "metric"
   };
 
   function radiusForDensity(density) {
@@ -54,6 +55,7 @@
     root.setAttribute("data-density", density);
     root.setAttribute("data-radius", radiusForDensity(density));
     root.setAttribute("data-font-size", normalizeFontSize(s.fontSize));
+    root.setAttribute("data-unit-system", s.unitSystem === "imperial" ? "imperial" : "metric");
 
     var name = (s.name || "").trim();
     var greetName = greetingDisplayName(name);
@@ -90,6 +92,7 @@
     var spentEl = document.getElementById("settingsSpent");
     var stockEl = document.getElementById("settingsStock");
     var locationEl = document.getElementById("settingsShoppingLocation");
+    var unitSystemEl = document.getElementById("settingsUnitSystem");
     var theme = "dark";
     var accent = "default";
     var density = "comfortable";
@@ -109,6 +112,7 @@
       weeklySpent: spentVal,
       stockNotes: stockEl ? stockEl.value.trim() : "",
       shoppingLocation: locationEl ? locationEl.value.trim() : "",
+      unitSystem: unitSystemEl && unitSystemEl.value === "imperial" ? "imperial" : "metric",
       theme: theme,
       accent: accent,
       density: density,
@@ -176,6 +180,8 @@
     if (stockEl) stockEl.value = s.stockNotes || "";
     var locationField = document.getElementById("settingsShoppingLocation");
     if (locationField) locationField.value = s.shoppingLocation || "";
+    var unitSystemField = document.getElementById("settingsUnitSystem");
+    if (unitSystemField) unitSystemField.value = s.unitSystem === "imperial" ? "imperial" : "metric";
     var themeRadios = document.querySelectorAll("input[name=\"theme\"]");
     var densityRadios = document.querySelectorAll("input[name=\"density\"]");
     themeRadios.forEach(function (r) { r.checked = r.value === (s.theme || "dark"); });
@@ -226,7 +232,8 @@
           weeklyBudget: v.weeklyBudget,
           weeklySpent: v.weeklySpent,
           stockNotes: v.stockNotes,
-          shoppingLocation: v.shoppingLocation
+          shoppingLocation: v.shoppingLocation,
+          unitSystem: v.unitSystem
         });
         applySettings();
         updateBudgetSummary(v.weeklyBudget, v.weeklySpent);

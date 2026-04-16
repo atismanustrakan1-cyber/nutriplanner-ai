@@ -2,7 +2,11 @@
   var STORAGE_TARGETS = "nutriplanner_targets";
   var STORAGE_MEALS = "nutriplanner_meals";
   var STORAGE_WEEKLY_EVENTS = "nutriplanner_weekly_events";
+  var STORAGE_SETTINGS = "nutriplanner_settings";
   var DEFAULT_TARGETS = { targetCalories: 2100, targetMacros: { protein_g: 112, carbs_g: 230, fat_g: 56 } };
+  var LB_PER_KG = 2.2046226218;
+  var CM_PER_IN = 2.54;
+  var activeTargetUnitSystem = "metric";
 
   function copyText(text, msgEl) {
     navigator.clipboard.writeText(text).then(function () {
@@ -58,6 +62,48 @@
       localStorage.setItem(STORAGE_WEEKLY_EVENTS, JSON.stringify(events));
     } catch (e) {}
     if (typeof window.scheduleNutriplannerCloudSave === "function") window.scheduleNutriplannerCloudSave();
+  }
+
+  function getStoredSettings() {
+    try {
+      var raw = localStorage.getItem(STORAGE_SETTINGS);
+      if (raw) return JSON.parse(raw) || {};
+    } catch (e) {}
+    return {};
+  }
+
+  function getUnitSystem() {
+    var s = getStoredSettings();
+    return s && s.unitSystem === "imperial" ? "imperial" : "metric";
+  }
+
+  function kgToLb(kg) { return kg * LB_PER_KG; }
+  function lbToKg(lb) { return lb / LB_PER_KG; }
+  function cmToIn(cm) { return cm / CM_PER_IN; }
+  function inToCm(inches) { return inches * CM_PER_IN; }
+
+  function applyTargetUnitSystem() {
+    var weightEl = document.getElementById("weightInput");
+    var heightEl = document.getElementById("heightInput");
+    var weightLabel = document.getElementById("weightLabel");
+    var heightLabel = document.getElementById("heightLabel");
+    if (!weightEl || !heightEl) return;
+    var nextSystem = getUnitSystem();
+    var currentWeight = parseFloat(weightEl.value);
+    var currentHeight = parseFloat(heightEl.value);
+    if (activeTargetUnitSystem !== nextSystem) {
+      if (Number.isFinite(currentWeight) && currentWeight > 0) {
+        if (nextSystem === "imperial") weightEl.value = (Math.round(kgToLb(currentWeight) * 10) / 10).toString();
+        else weightEl.value = (Math.round(lbToKg(currentWeight) * 10) / 10).toString();
+      }
+      if (Number.isFinite(currentHeight) && currentHeight > 0) {
+        if (nextSystem === "imperial") heightEl.value = (Math.round(cmToIn(currentHeight) * 10) / 10).toString();
+        else heightEl.value = (Math.round(inToCm(currentHeight) * 10) / 10).toString();
+      }
+    }
+    activeTargetUnitSystem = nextSystem;
+    if (weightLabel) weightLabel.textContent = nextSystem === "imperial" ? "Weight (lb)" : "Weight (kg)";
+    if (heightLabel) heightLabel.textContent = nextSystem === "imperial" ? "Height (in)" : "Height (cm)";
   }
 
   // ----- Targets page -----
@@ -277,12 +323,12 @@
     var override = overrideEl && overrideEl.value.trim() !== "" ? parseInt(overrideEl.value, 10) : null;
 
     if (!weight || weight <= 0) {
-      renderTargetOutput("Enter a valid weight (kg).", null, true);
+      renderTargetOutput("Enter a valid weight (" + (activeTargetUnitSystem === "imperial" ? "lb" : "kg") + ").", null, true);
       return;
     }
 
     if (!height || height <= 0) {
-      renderTargetOutput("Enter a valid height (cm).", null, true);
+      renderTargetOutput("Enter a valid height (" + (activeTargetUnitSystem === "imperial" ? "in" : "cm") + ").", null, true);
       return;
     }
 
@@ -296,10 +342,13 @@
       return;
     }
 
+    var weightKg = activeTargetUnitSystem === "imperial" ? lbToKg(weight) : weight;
+    var heightCm = activeTargetUnitSystem === "imperial" ? inToCm(height) : height;
+
     var cal = override;
     var forcedMin = false;
     if (cal == null || cal <= 0) {
-      cal = window.np_daily_calorie_target(weight, goal, height, age, sex, activity);
+      cal = window.np_daily_calorie_target(weightKg, goal, heightCm, age, sex, activity);
       if (cal === -1) {
         renderTargetOutput("Invalid inputs. Please check weight, height, age, and sex.", null, true);
         renderTargetOutput("Invalid weight.", null, true);
@@ -316,13 +365,13 @@
 
     var macros;
     if (dietType === "keto") {
-      macros = ketoMacros(cal, weight);
+      macros = ketoMacros(cal, weightKg);
     } else if (dietType === "high_protein") {
-      macros = highProteinMacros(cal, weight);
+      macros = highProteinMacros(cal, weightKg);
     } else if (dietType === "low_fat") {
-      macros = lowFatMacros(cal, weight);
+      macros = lowFatMacros(cal, weightKg);
     } else {
-      macros = window.np_macro_targets(cal, weight);
+      macros = window.np_macro_targets(cal, weightKg);
     }
     setStoredTargets(cal, macros);
     renderTargetOutput(cal, macros, false);
@@ -369,6 +418,8 @@
     var sliderF = document.getElementById("sliderFat");
     if (sliderP) sliderP.addEventListener("input", applySliderMacros);
     if (sliderF) sliderF.addEventListener("input", applySliderMacros);
+
+    applyTargetUnitSystem();
 
     var saved = getStoredTargets();
     if (saved) {
@@ -558,6 +609,40 @@
         return "Search unavailable. Run the app from the backend server: in terminal run \u201ccd backend && npm install && npm start\u201d then open http://localhost:8000";
       return "Search failed: " + (err && err.message ? err.message : "Check FOOD_API_KEY in backend/.env");
     }
+    function normalizeFoodText(v) {
+      return String(v || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim();
+    }
+    function dedupeFoodSearchResults(foods) {
+      if (!Array.isArray(foods)) return [];
+      var byName = {};
+      for (var i = 0; i < foods.length; i++) {
+        var item = foods[i];
+        if (!item || typeof item !== "object") continue;
+        var key = normalizeFoodText(item.description || "unknown");
+        if (!key) key = "unknown";
+        var existing = byName[key];
+        if (!existing) {
+          byName[key] = item;
+          continue;
+        }
+        // Prefer entries with more complete macro data.
+        var existingScore =
+          Number(existing.caloriesPerServing || 0) +
+          Number(existing.proteinPerServing || 0) +
+          Number(existing.carbsPerServing || 0) +
+          Number(existing.fatPerServing || 0);
+        var itemScore =
+          Number(item.caloriesPerServing || 0) +
+          Number(item.proteinPerServing || 0) +
+          Number(item.carbsPerServing || 0) +
+          Number(item.fatPerServing || 0);
+        if (itemScore > existingScore) byName[key] = item;
+      }
+      return Object.keys(byName).map(function (k) { return byName[k]; });
+    }
     if (foodSearchBtn && foodSearchResults) {
       function hideAutocomplete() { if (foodSearchAutocomplete) { foodSearchAutocomplete.setAttribute("hidden", ""); foodSearchAutocomplete.innerHTML = ""; } }
       var foodSearchEmptyState = document.getElementById("foodSearchEmptyState");
@@ -576,7 +661,7 @@
             return res.json();
           })
           .then(function (data) {
-            var foods = data.foods || [];
+            var foods = dedupeFoodSearchResults(data.foods || []);
             if (foods.length === 0) {
               foodSearchResults.innerHTML = "<p class=\"muted\">No foods found. Try another search.</p>";
               return;
@@ -639,7 +724,7 @@
                 return res.json();
               })
               .then(function (data) {
-                var foods = (data.foods || []).slice(0, 10);
+                var foods = dedupeFoodSearchResults(data.foods || []).slice(0, 10);
                 if (foods.length === 0) {
                   foodSearchAutocomplete.innerHTML = "<div class=\"food-search-autocomplete-loading muted\">No suggestions. Press Search or Enter.</div>";
                   foodSearchAutocomplete.removeAttribute("hidden");
@@ -972,6 +1057,114 @@
       weeklyModalScrollLock();
     }
 
+    function formatWeeklyDetailInstructions(instr) {
+      var raw = String(instr || "").trim();
+      if (!raw) {
+        return "<p class=\"weekly-detail-empty\">No instructions for this event. Add text when creating an event, or import from AI Meal Plan to attach recipes.</p>";
+      }
+
+      var parts = raw.split(/\n\s*\n—\s*Shopping\s*—\s*\n/i);
+      var recipeRaw = String(parts[0] || "").trim();
+      var shoppingRaw = String(parts[1] || "").trim();
+
+      var html = "";
+      if (recipeRaw) {
+        var recipeLines = recipeRaw.split(/\n+/).map(function (l) { return String(l || "").trim(); }).filter(Boolean);
+        var nutritionLines = [];
+        var stepLines = [];
+        for (var i = 0; i < recipeLines.length; i++) {
+          var line = recipeLines[i];
+          if (
+            /^recommended servings\s*:/i.test(line) ||
+            /^estimated meal calories\s*:/i.test(line) ||
+            /^macros\s*:/i.test(line)
+          ) {
+            nutritionLines.push(line);
+          } else {
+            stepLines.push(line);
+          }
+        }
+        var hasNumberedSteps = stepLines.length > 1 && stepLines.every(function (l) { return /^\d+[.)]\s+/.test(l); });
+        var isMealStyle = nutritionLines.length > 0 || hasNumberedSteps || !!shoppingRaw;
+        html += "<section class=\"weekly-detail-section\"><h3 class=\"weekly-detail-section-title\">" + (isMealStyle ? "How to make it" : "Description") + "</h3>";
+        if (nutritionLines.length) {
+          html += "<p class=\"weekly-detail-text\">" + nutritionLines.map(function (line) {
+            return safeText(line);
+          }).join("<br />") + "</p>";
+        }
+        if (hasNumberedSteps) {
+          html += "<ol class=\"weekly-detail-steps\">" +
+            stepLines.map(function (l) {
+              var stepText = l.replace(/^\d+[.)]\s+/, "");
+              return "<li>" + safeText(stepText) + "</li>";
+            }).join("") +
+            "</ol>";
+        } else if (stepLines.length) {
+          html += "<p class=\"weekly-detail-text\">" + safeText(stepLines.join("\n")).replace(/\n/g, "<br />") + "</p>";
+        } else if (!nutritionLines.length) {
+          html += "<p class=\"weekly-detail-text\">" + safeText(recipeRaw).replace(/\n/g, "<br />") + "</p>";
+        } else {
+          html += "<p class=\"weekly-detail-empty\">No step-by-step instructions for this event.</p>";
+        }
+        html += "</section>";
+      }
+
+      if (shoppingRaw) {
+        function formatWhereBuyShortLink(whereRaw) {
+          var raw = String(whereRaw || "").trim();
+          if (!raw) return "—";
+          var match = raw.match(/https?:\/\/[^\s]+/i);
+          if (!match) return safeText(raw);
+          var url = match[0];
+          var left = raw.replace(url, "").trim();
+          var firstChunk = left.split(/[·|]/)[0] || "";
+          var label = (firstChunk.split(",")[0] || "").trim();
+          if (!label) label = "Store";
+          return (
+            '<a class="meal-plan-directions-link" href="' +
+            safeText(url) +
+            '" target="_blank" rel="noreferrer noopener">' +
+            safeText(label) +
+            "</a>"
+          );
+        }
+
+        var shoppingRows = shoppingRaw
+          .split(/\n+/)
+          .map(function (line) { return String(line || "").trim(); })
+          .filter(Boolean)
+          .map(function (line) {
+            var segs = line.split(/\s*·\s*/).filter(Boolean);
+            if (!segs.length) return null;
+            return {
+              item: segs[0] || "",
+              price: segs[1] || "",
+              where: segs.slice(2).join(" · ") || ""
+            };
+          })
+          .filter(Boolean);
+
+        if (shoppingRows.length) {
+          html += "<section class=\"weekly-detail-section\"><h3 class=\"weekly-detail-section-title\">Shopping</h3><div class=\"weekly-detail-shopping-list\">";
+          html += shoppingRows.map(function (row) {
+            return (
+              "<div class=\"weekly-detail-shopping-row\">" +
+              "<span class=\"weekly-detail-shopping-item\">" + safeText(row.item) + "</span>" +
+              "<span class=\"weekly-detail-shopping-price\">" + safeText(row.price || "—") + "</span>" +
+              "<span class=\"weekly-detail-shopping-where\">" + formatWhereBuyShortLink(row.where || "") + "</span>" +
+              "</div>"
+            );
+          }).join("");
+          html += "</div></section>";
+        }
+      }
+
+      if (!html) {
+        html = "<p class=\"weekly-detail-text\">" + safeText(raw).replace(/\n/g, "<br />") + "</p>";
+      }
+      return html;
+    }
+
     function openWeeklyDetail(ev) {
       if (!detailOverlay || !detailTitle || !detailMeta || !detailBody) return;
       detailTitle.textContent = ev.title || "Event";
@@ -984,7 +1177,7 @@
       }
       detailMeta.textContent = (ev.day || "") + " · " + timePart;
       var instr = ev.instructions != null ? String(ev.instructions).trim() : "";
-      detailBody.textContent = instr || "No instructions for this event. Add text when creating an event, or import from AI Meal Plan to attach recipes.";
+      detailBody.innerHTML = formatWeeklyDetailInstructions(instr);
       detailOverlay.removeAttribute("hidden");
       detailOverlay.setAttribute("aria-hidden", "false");
       weeklyModalScrollLock();
@@ -1059,7 +1252,7 @@
     var endOfDayExclusive = 24 * 60;
     var hourHeight = 58;
     /** Short slots (e.g. 30 min) need extra pixels so the title stays readable; may extend below the nominal time range. */
-    var minTimedEventHeight = 76;
+    var minTimedEventHeight = 92;
     var palette = ["blue", "green", "pink", "orange", "purple"];
     var VIEW_KEY = "nutriplanner_calendar_view";
     function getTodayWeekdayName() {
@@ -1190,6 +1383,48 @@
         timedByDay[d].sort(function (a, b) { return a.startMin - b.startMin; });
       });
       return { allDayByDay: allDayByDay, timedByDay: timedByDay };
+    }
+
+    function layoutTimedSlotsForOverlap(daySlots) {
+      if (!Array.isArray(daySlots) || daySlots.length === 0) return [];
+      var slots = daySlots.slice().sort(function (a, b) { return a.startMin - b.startMin; });
+      var out = [];
+      var i = 0;
+
+      while (i < slots.length) {
+        var cluster = [slots[i]];
+        var clusterEnd = slots[i].endMin;
+        i += 1;
+
+        while (i < slots.length && slots[i].startMin < clusterEnd) {
+          cluster.push(slots[i]);
+          if (slots[i].endMin > clusterEnd) clusterEnd = slots[i].endMin;
+          i += 1;
+        }
+
+        var active = [];
+        var maxLanes = 1;
+        for (var c = 0; c < cluster.length; c++) {
+          var slot = cluster[c];
+          active = active.filter(function (a) { return a.endMin > slot.startMin; });
+          var used = {};
+          for (var aIdx = 0; aIdx < active.length; aIdx++) used[active[aIdx].lane] = true;
+          var lane = 0;
+          while (used[lane]) lane += 1;
+          slot._lane = lane;
+          active.push({ lane: lane, endMin: slot.endMin });
+          if (lane + 1 > maxLanes) maxLanes = lane + 1;
+        }
+
+        for (var k = 0; k < cluster.length; k++) {
+          cluster[k].lane = cluster[k]._lane || 0;
+          cluster[k].totalLanes = maxLanes;
+          delete cluster[k]._lane;
+          out.push(cluster[k]);
+        }
+      }
+
+      return out;
     }
 
     function updateViewToolbar() {
@@ -1468,7 +1703,8 @@
             lines += "<div class=\"weekly-hour-line\"></div>";
           }
 
-          var blocks = timedByDay[d]
+          var laidOutSlots = layoutTimedSlotsForOverlap(timedByDay[d]);
+          var blocks = laidOutSlots
             .map(function (slot) {
               var startMins = startHour * 60;
               var totalMins = (endHour - startHour + 1) * 60;
@@ -1478,6 +1714,10 @@
               var durationMin = Math.max(15, slot.endMin - slot.startMin);
               var heightPx = Math.max(minTimedEventHeight, (durationMin / 60) * hourHeight - 2);
               if (top + heightPx > trackHeight) heightPx = Math.max(minTimedEventHeight, trackHeight - top);
+              var totalLanes = Math.max(1, Number(slot.totalLanes || 1));
+              var lane = Math.max(0, Number(slot.lane || 0));
+              var laneWidthPct = 100 / totalLanes;
+              var leftPct = lane * laneWidthPct;
               var title = safeText(slot.event.title);
               var timeRange = formatTimeRange(slot.startMin, slot.endMin);
               return (
@@ -1487,7 +1727,13 @@
                 top +
                 "px;height:" +
                 heightPx +
-                "px\">" +
+                "px;left:calc(" +
+                leftPct.toFixed(4) +
+                "% + 4px);width:calc(" +
+                laneWidthPct.toFixed(4) +
+                "% - 8px);right:auto;z-index:" +
+                (lane + 1) +
+                "\">" +
                 "<button type=\"button\" class=\"weekly-shift-btn weekly-shift-left\" data-id=\"" +
                 safeText(slot.event.id) +
                 "\" aria-label=\"Move event to previous day\">&#x2039;</button>" +
