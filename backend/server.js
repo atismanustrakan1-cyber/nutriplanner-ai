@@ -118,6 +118,27 @@ function parseJsonObjectFromAiContent(raw) {
   }
 }
 
+function extractAiMessageText(content) {
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return content
+      .map((part) => {
+        if (typeof part === "string") return part;
+        if (!part || typeof part !== "object") return "";
+        if (typeof part.text === "string") return part.text;
+        if (typeof part.content === "string") return part.content;
+        return "";
+      })
+      .filter(Boolean)
+      .join("\n");
+  }
+  if (content && typeof content === "object") {
+    if (typeof content.text === "string") return content.text;
+    if (typeof content.content === "string") return content.content;
+  }
+  return "";
+}
+
 async function foodSearchHandler(req, res) {
   const apiKey = (process.env.FOOD_API_KEY || process.env.USDA_API_KEY || "").trim();
   if (!apiKey) {
@@ -326,7 +347,7 @@ For EVERY meal include:
 - "day": "Monday" through "Sunday"
 - "startTime" and "endTime": "HH:MM" 24h (reasonable meal times)
 - "recipe": concise instructions (amounts + short numbered steps; keep under ~120 words per meal so the full week fits in one JSON response)
-- "shopping": array of { "item": string, "approx_price_usd": number, "where_buy": string } for ingredients mainly needed for that meal. For "where_buy", name realistic places near the user's area when their message includes a shopping location (city, ZIP, neighborhood, or region)—e.g. a regional grocery chain, farmers market, or "Walmart near [area]". If no location is given, use typical US chains. Be specific about store type or area, not GPS coordinates.
+- "shopping": array of { "item": string, "approx_price_usd": number, "where_buy": string } for ingredients mainly needed for that meal. For "where_buy", include a specific destination in/near the user's shopping area (especially if they provide a ZIP code) and include one Google Maps directions URL. Preferred format: "Store Name, full street address, city, state ZIP · Directions: https://www.google.com/maps/dir/?api=1&destination=<url-encoded-destination>". Do NOT use placeholder addresses such as "123 Main St", "456 Oak Ave", "Anytown", or "near [zip]". Provide realistic-looking full addresses with a street number, street name, city, state abbreviation, and ZIP.
 - "meal_cost_usd": rough sum of that meal's shopping lines
 
 Also include:
@@ -335,6 +356,73 @@ Also include:
 - "planner_events": same number of entries as meals, each { "day", "startTime", "endTime", "title" } where title is short for a calendar e.g. "Breakfast: Oatmeal bowl"
 
 Reply with ONLY one JSON object, no markdown. Use realistic prices; if unknown use 0 for approx_price_usd and explain in item name.`;
+
+function hasLikelyPlaceholderAddress(text) {
+  const s = String(text || "").toLowerCase();
+  if (!s) return true;
+  if (!/\b\d{1,6}\s+[a-z0-9.\- ]+\b/.test(s)) return true;
+  if (!/\b[a-z]{2}\s+\d{5}(?:-\d{4})?\b/.test(s)) return true;
+  return (
+    /\b123\s+main\b/.test(s) ||
+    /\b456\s+oak\b/.test(s) ||
+    /\banytown\b/.test(s) ||
+    /\bnear\s+\d{5}\b/.test(s) ||
+    /\bnear\s+\[/.test(s) ||
+    /\[area\]|\[zip\]|\[city\]/.test(s)
+  );
+}
+
+function shoppingHasWeakLocations(meals) {
+  if (!Array.isArray(meals) || meals.length === 0) return true;
+  let sawAnyShopping = false;
+  for (const meal of meals) {
+    const shopping = Array.isArray(meal?.shopping) ? meal.shopping : [];
+    for (const row of shopping) {
+      if (!row || typeof row !== "object") continue;
+      sawAnyShopping = true;
+      const where = row.where_buy ?? row.where ?? "";
+      if (hasLikelyPlaceholderAddress(where)) return true;
+    }
+  }
+  return !sawAnyShopping;
+}
+
+function normalizeMealPlanShape(obj) {
+  const root = obj && typeof obj === "object" ? obj : {};
+  const candidates = [root, root.plan, root.weekly_plan, root.data].filter(
+    (x) => x && typeof x === "object" && !Array.isArray(x),
+  );
+
+  let meals = [];
+  let plannerEvents = [];
+  let totalEstimatedUsd = null;
+  let budgetNote = "";
+
+  for (const c of candidates) {
+    if (!meals.length) {
+      if (Array.isArray(c.meals)) meals = c.meals;
+      else if (Array.isArray(c.weekly_meals)) meals = c.weekly_meals;
+    }
+    if (!plannerEvents.length) {
+      if (Array.isArray(c.planner_events)) plannerEvents = c.planner_events;
+      else if (Array.isArray(c.plannerEvents)) plannerEvents = c.plannerEvents;
+    }
+    if (totalEstimatedUsd == null) {
+      const v = Number(c.total_estimated_usd ?? c.totalEstimatedUsd ?? c.week_total_usd);
+      if (Number.isFinite(v)) totalEstimatedUsd = v;
+    }
+    if (!budgetNote) {
+      budgetNote = String(c.budget_note || c.budgetNote || "").trim();
+    }
+  }
+
+  return {
+    meals: Array.isArray(meals) ? meals : [],
+    planner_events: Array.isArray(plannerEvents) ? plannerEvents : [],
+    total_estimated_usd: totalEstimatedUsd,
+    budget_note: budgetNote,
+  };
+}
 
 async function mealPlanWeekHandler(req, res) {
   const apiKey = (process.env.OPENROUTER_API_KEY || "").trim();
@@ -373,54 +461,107 @@ async function mealPlanWeekHandler(req, res) {
   };
 
   try {
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://nutriplanner-ai.local",
+    const callModel = async (messages) => {
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://nutriplanner-ai.local",
+        },
+        body: JSON.stringify({
+          ...payload,
+          messages,
+        }),
+        signal: AbortSignal.timeout(120000),
+      });
+
+      if (!response.ok) {
+        return { error: `Meal plan AI failed: HTTP ${response.status}` };
+      }
+
+      const data = await response.json();
+      const choice = data?.choices?.[0];
+      const text = extractAiMessageText(choice?.message?.content).trim();
+      const finishReason = String(choice?.finish_reason || "");
+      const parsed = parseJsonObjectFromAiContent(text);
+      return { text, finishReason, parsed };
+    };
+
+    const firstMessages = payload.messages;
+    const first = await callModel(firstMessages);
+    if (first.error) return httpError(res, 502, first.error);
+    const retryMessages = [
+      firstMessages[0],
+      firstMessages[1],
+      {
+        role: "assistant",
+        content: first.text || "{}",
       },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(120000),
-    });
+      {
+        role: "user",
+        content:
+          "Repair and re-output the response as one JSON object with required keys: meals (array with meal objects), planner_events (array), total_estimated_usd (number), budget_note (string). Do not omit meals.",
+      },
+    ];
+    const second = await callModel(retryMessages);
+    if (second.error) return httpError(res, 502, second.error);
 
-    if (!response.ok) {
-      return httpError(res, 502, `Meal plan AI failed: HTTP ${response.status}`);
-    }
-
-    const data = await response.json();
-    const choice = data?.choices?.[0];
-    const text = String(choice?.message?.content || "").trim();
-    const finishReason = String(choice?.finish_reason || "");
-
-    const parsed = parseJsonObjectFromAiContent(text);
-    if (!parsed.obj) {
+    let parsedObj = first.parsed.obj || null;
+    if (!parsedObj && second.parsed.obj) parsedObj = second.parsed.obj;
+    if (!parsedObj) {
+      const finalReason = second.finishReason || first.finishReason;
       const truncated =
-        finishReason === "length"
+        finalReason === "length"
           ? " Response was cut off (token limit). Try again, or shorten targets/context."
           : "";
-      if (parsed.error === "empty") {
-        return httpError(res, 502, "Empty response from meal plan AI." + truncated);
-      }
-      if (parsed.error === "no_object") {
+      const finalErr = second.parsed.error || first.parsed.error;
+      if (finalErr === "empty") return httpError(res, 502, "Empty response from meal plan AI." + truncated);
+      if (finalErr === "no_object") {
         return httpError(res, 502, "Could not find a JSON object in the meal plan AI response." + truncated);
       }
       return httpError(res, 502, "Invalid JSON from meal plan AI." + truncated);
     }
-    const out = parsed.obj;
 
-    const meals = Array.isArray(out.meals) ? out.meals : [];
-    const plannerEvents = Array.isArray(out.planner_events) ? out.planner_events : [];
+    let normalized = normalizeMealPlanShape(parsedObj);
+    if (normalized.meals.length === 0 && second.parsed.obj) {
+      normalized = normalizeMealPlanShape(second.parsed.obj);
+    }
 
-    return res.json({
-      budget_note: String(out.budget_note || "").trim(),
-      total_estimated_usd:
-        typeof out.total_estimated_usd === "number" && Number.isFinite(out.total_estimated_usd)
-          ? out.total_estimated_usd
-          : null,
-      meals,
-      planner_events: plannerEvents,
-    });
+    if (!shoppingHasWeakLocations(normalized.meals)) {
+      return res.json(normalized);
+    }
+
+    const addressRetryMessages = [
+      firstMessages[0],
+      firstMessages[1],
+      {
+        role: "assistant",
+        content: JSON.stringify(parsedObj),
+      },
+      {
+        role: "user",
+        content:
+          "Repair only the shopping.where_buy fields. Every where_buy must include a realistic full address with street number + street name + city + state abbreviation + ZIP (no placeholders like 123 Main St, Anytown, or near [zip]) and include a Google Maps directions link. Return one valid JSON object.",
+      },
+    ];
+    const third = await callModel(addressRetryMessages);
+    if (!third.error && third.parsed.obj) {
+      const repaired = normalizeMealPlanShape(third.parsed.obj);
+      if (repaired.meals.length > 0 && !shoppingHasWeakLocations(repaired.meals)) {
+        return res.json(repaired);
+      }
+    }
+
+    if (normalized.meals.length === 0) {
+      return httpError(
+        res,
+        502,
+        "Meal plan AI returned no meals. Try again, or simplify settings/targets so the model can fit a full week.",
+      );
+    }
+
+    return res.json(normalized);
   } catch (err) {
     return httpError(res, 502, err.message || "Meal plan request failed.");
   }

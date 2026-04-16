@@ -706,6 +706,7 @@
       var scanStream = null;
       var pendingScanSnapshot = null;
       var pendingScanData = null;
+      var SCAN_SERVINGS_INPUT_ID = "scanFoodServingsInput";
 
       function stopScanStream() {
         if (scanStream && scanStream.getTracks) {
@@ -785,11 +786,14 @@
         var pEl = document.getElementById("mealP");
         var cEl = document.getElementById("mealC");
         var fEl = document.getElementById("mealF");
+        var servingsEl = document.getElementById(SCAN_SERVINGS_INPUT_ID);
+        var servings = servingsEl ? parseFloat(servingsEl.value) : 1;
+        if (!Number.isFinite(servings) || servings <= 0) servings = 1;
         if (nameEl) nameEl.value = d.name || "";
-        if (calEl) calEl.value = String(d.calories != null ? d.calories : 0);
-        if (pEl) pEl.value = String(d.protein != null ? d.protein : 0);
-        if (cEl) cEl.value = String(d.carbs != null ? d.carbs : 0);
-        if (fEl) fEl.value = String(d.fat != null ? d.fat : 0);
+        if (calEl) calEl.value = String(Math.round((Number(d.calories) || 0) * servings));
+        if (pEl) pEl.value = String(Math.round((Number(d.protein) || 0) * servings * 10) / 10);
+        if (cEl) cEl.value = String(Math.round((Number(d.carbs) || 0) * servings * 10) / 10);
+        if (fEl) fEl.value = String(Math.round((Number(d.fat) || 0) * servings * 10) / 10);
         closeScanModal();
         if (nameEl) nameEl.focus();
       });
@@ -868,24 +872,46 @@
                 .replace(/>/g, "&gt;")
                 .replace(/"/g, "&quot;");
             };
-            scanFoodConfirmDetails.innerHTML =
-              "<dl class=\"scan-food-confirm-dl\">" +
-              "<dt>Name</dt><dd>" +
-              esc(data.name) +
-              "</dd>" +
-              "<dt>Calories</dt><dd>" +
-              esc(String(data.calories != null ? data.calories : 0)) +
-              " kcal</dd>" +
-              "<dt>Protein</dt><dd>" +
-              esc(String(data.protein != null ? data.protein : 0)) +
-              " g</dd>" +
-              "<dt>Carbs</dt><dd>" +
-              esc(String(data.carbs != null ? data.carbs : 0)) +
-              " g</dd>" +
-              "<dt>Fat</dt><dd>" +
-              esc(String(data.fat != null ? data.fat : 0)) +
-              " g</dd>" +
-              "</dl>";
+            var renderScanConfirmDetails = function (servings) {
+              var s = Number(servings);
+              if (!Number.isFinite(s) || s <= 0) s = 1;
+              var cal = Math.round((Number(data.calories) || 0) * s);
+              var protein = Math.round((Number(data.protein) || 0) * s * 10) / 10;
+              var carbs = Math.round((Number(data.carbs) || 0) * s * 10) / 10;
+              var fat = Math.round((Number(data.fat) || 0) * s * 10) / 10;
+              scanFoodConfirmDetails.innerHTML =
+                "<dl class=\"scan-food-confirm-dl\">" +
+                "<dt>Name</dt><dd>" +
+                esc(data.name) +
+                "</dd>" +
+                "<dt>Servings</dt><dd><input id=\"" +
+                SCAN_SERVINGS_INPUT_ID +
+                "\" type=\"number\" min=\"0.25\" step=\"0.25\" value=\"" +
+                esc(String(s)) +
+                "\" class=\"scan-food-servings-input\" /></dd>" +
+                "<dt>Calories</dt><dd>" +
+                esc(String(cal)) +
+                " kcal</dd>" +
+                "<dt>Protein</dt><dd>" +
+                esc(String(protein)) +
+                " g</dd>" +
+                "<dt>Carbs</dt><dd>" +
+                esc(String(carbs)) +
+                " g</dd>" +
+                "<dt>Fat</dt><dd>" +
+                esc(String(fat)) +
+                " g</dd>" +
+                "</dl>";
+              var servingsInput = document.getElementById(SCAN_SERVINGS_INPUT_ID);
+              if (servingsInput) {
+                servingsInput.addEventListener("input", function () {
+                  var next = parseFloat(servingsInput.value);
+                  if (!Number.isFinite(next) || next <= 0) return;
+                  renderScanConfirmDetails(next);
+                });
+              }
+            };
+            renderScanConfirmDetails(1);
             setScanStage("confirm");
             scanFoodConfirmApply.focus();
           })

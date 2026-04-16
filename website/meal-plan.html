@@ -22,7 +22,7 @@
       <a href="index.html" class="sidebar-brand">
         <img src="logo.png" alt="" class="logo" width="44" height="44" />
         <div class="sidebar-brand-text">
-          <div class="title">NutriPlanner AI</div>
+          <div class="title">MealTracker</div>
           <div class="subtitle">Hack@UCF</div>
         </div>
       </a>
@@ -54,6 +54,17 @@
           <p class="meal-plan-params-hint muted">Update <a href="settings.html">Settings</a> and <a href="targets.html">Set Targets</a>, then refresh before generating for the latest numbers.</p>
         </div>
         <div id="mealPlanContextPreview" class="meal-plan-context-root" aria-live="polite"></div>
+        <div class="meal-plan-customize-wrap">
+          <label for="mealPlanCustomPrompt" class="meal-plan-customize-label">Optional: customize this week's plan</label>
+          <textarea
+            id="mealPlanCustomPrompt"
+            class="meal-plan-customize-input"
+            rows="3"
+            maxlength="600"
+            placeholder="Examples: keep breakfasts under 10 minutes, avoid fish, include 2 high-protein snacks/day, or focus on meal prep-friendly lunches."
+          ></textarea>
+          <p class="meal-plan-customize-hint muted">This note is added to the AI prompt for this weekly generation.</p>
+        </div>
         <div class="meal-plan-actions-top">
           <button type="button" class="btn primary meal-plan-generate-btn" id="mealPlanGenerate">Generate plan with AI</button>
           <span id="mealPlanStatus" class="meal-plan-status" aria-live="polite"></span>
@@ -72,14 +83,23 @@
             <span id="mealPlanImportStatus" class="muted meal-plan-import-status" aria-live="polite"></span>
           </div>
         </div>
-        <div id="mealPlanDays" class="meal-plan-days meal-plan-days-grid"></div>
+        <div class="meal-plan-content-layout">
+          <aside class="meal-plan-grocery-card card" aria-labelledby="mealPlanGroceryTitle">
+            <h2 id="mealPlanGroceryTitle" class="meal-plan-grocery-title">Weekly grocery list</h2>
+            <p id="mealPlanGroceryMeta" class="meal-plan-grocery-meta muted"></p>
+            <div id="mealPlanGroceryList" class="meal-plan-grocery-list">
+              <p class="muted">Generate a plan to build your grocery list.</p>
+            </div>
+          </aside>
+          <div id="mealPlanDays" class="meal-plan-days meal-plan-days-grid"></div>
+        </div>
       </div>
     </div>
   </main>
 
   <footer class="footer">
     <div class="container footer-row">
-      <span class="footer-brand">NutriPlanner-AI</span>
+      <span class="footer-brand">MealTracker</span>
       <span class="muted footer-collab">Collaborative project: Atis, Logan, Isabella, Derick</span>
     </div>
   </footer>
